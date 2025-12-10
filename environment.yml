@@ -1,0 +1,19 @@
+name: ansible-dev
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.13
+  - ansible
+  - molecule
+  - pytest
+  - pytest-testinfra
+  - yamllint
+  - pre-commit
+  - pip
+  - pip:
+      - molecule-plugins
+      - python-vagrant
+      - libvirt-python
+
