@@ -24,7 +24,7 @@ vagrant plugin install vagrant-libvirt
 
 ### Python 依赖
 
-![environment.yml](./environment.yml)
+[environment.yml](./environment.yml)
 
 ## 环境配置
 
