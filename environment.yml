@@ -6,6 +6,7 @@ channels:
 dependencies:
   - python=3.13
   - ansible
+  - ansible-lint
   - molecule
   - pytest
   - pytest-testinfra
