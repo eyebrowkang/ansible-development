@@ -8,6 +8,7 @@ dependencies:
   - ansible
   - ansible-lint
   - molecule
+  - netaddr
   - pytest
   - pytest-testinfra
   - yamllint
