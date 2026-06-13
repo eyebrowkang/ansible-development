@@ -9,6 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - run: uv sync
+      - run: uv run ansible-galaxy collection install -r molecule/default/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint
 {% if shell_templates %}

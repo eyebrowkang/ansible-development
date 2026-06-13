@@ -10,6 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: uv sync
+      - run: uv run ansible-galaxy collection install -r molecule/default/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint
 {% if shell_templates %}
