@@ -1,0 +1,34 @@
+# Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
+.PHONY: help install lint test test-vm converge destroy
+
+help:
+	@echo "install   - uv sync (dev toolchain)"
+	@echo "lint      - yamllint + ansible-lint"
+	@echo "test      - molecule test (docker scenario)"
+	@echo "test-vm   - molecule test (vagrant scenario; needs 'uv sync --group vagrant' + libvirt/KVM)"
+	@echo "converge  - molecule converge (docker)"
+	@echo "destroy   - molecule destroy (docker)"
+
+install:
+	uv sync
+
+lint:
+	uv run yamllint .
+	uv run ansible-lint
+
+test:
+	uv run molecule test
+
+converge:
+	uv run molecule converge
+
+destroy:
+	uv run molecule destroy
+
+# molecule-plugins#301: the vagrant module/filter aren't on Ansible's default search
+# path. Compute the package paths at runtime (no hardcoded python version) and export
+# them so molecule can find the vagrant module. See docs/molecule-301-workaround.md
+test-vm:
+	ANSIBLE_LIBRARY="$$(uv run python -c 'import os, molecule_plugins.vagrant as m; print(os.path.join(os.path.dirname(m.__file__), "modules"))')" \
+	ANSIBLE_FILTER_PLUGINS="$$(uv run python -c 'import os, molecule as m; print(os.path.join(os.path.dirname(m.__file__), "provisioner", "ansible", "plugins", "filter"))')" \
+	uv run molecule test -s vagrant

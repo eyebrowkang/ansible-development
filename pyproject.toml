@@ -1,0 +1,20 @@
+[project]
+name = "ansible-development"
+version = "0"
+description = "Meta-repo / toolbox for developing Ansible roles: copier templates + CI builder images + docs."
+requires-python = ">=3.13"
+dependencies = []
+
+# This repo is a toolbox, not a distributable package. `package = false` stops uv
+# from trying to build/install this directory as a wheel. The per-role dependency
+# contract lives in each generated role's own pyproject.toml (uv dependency groups).
+[tool.uv]
+package = false
+
+# Tooling for the scaffold itself: the copier generator + pre-commit.
+# Run `uvx copier copy templates/role roles/<name>` or `uv run copier ...`.
+[dependency-groups]
+dev = [
+    "copier>=9.15,<10",
+    "pre-commit>=4",
+]

@@ -1,0 +1,22 @@
+---
+galaxy_info:
+  role_name: {{ role_name }}
+  namespace: {{ namespace }}
+  author: {{ author }}
+  description: {{ role_description or role_name }}
+{% if license != 'none' %}
+  license: {{ license }}
+{% endif %}
+  min_ansible_version: "{{ min_ansible_version }}"
+  platforms:
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags: []
+
+dependencies: []
+
+collections:
+{% for c in galaxy_collections %}
+  - {{ c }}
+{% endfor %}

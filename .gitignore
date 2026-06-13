@@ -1,4 +1,13 @@
+# Ansible working dirs — each role/collection is its own git repo, developed here.
 collections/*
 !collections/.gitkeep
 roles/*
 !roles/.gitkeep
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Ansible
+*.retry

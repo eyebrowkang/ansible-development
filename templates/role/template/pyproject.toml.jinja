@@ -1,0 +1,32 @@
+[project]
+name = "{{ role_name }}"
+version = "0"
+description = "{{ role_description }}"
+requires-python = ">=3.12"
+dependencies = []
+
+# A role is not a distributable package — don't build/install this dir as a wheel.
+[tool.uv]
+package = false
+
+# Dev toolchain. `dev` is synced by default (`uv sync`) and drives the docker
+# scenario via molecule's built-in delegated driver (no molecule-plugins needed;
+# `docker` is the SDK that community.docker requires). `vagrant` is opt-in
+# (`uv sync --group vagrant`) and layers on top of `dev` via include-group.
+[dependency-groups]
+dev = [
+    "ansible-core>=2.21,<2.22",
+    "molecule>=26,<27",
+    "docker>=7",
+    "ansible-lint>=26,<27",
+    "yamllint>=1.35",
+    "pytest-testinfra>=10",
+]
+{% if include_vagrant %}
+vagrant = [
+    {include-group = "dev"},
+    "molecule-plugins[vagrant]>=25.8,<26",
+    "python-vagrant>=1.0",
+    "libvirt-python>=10",
+]
+{% endif %}

@@ -1,0 +1,39 @@
+---
+name: molecule
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  docker:
+    # Container job; the Forgejo runner's automounted docker.sock (DooD) lets molecule
+    # create the instance on the host daemon. systemd config lives in molecule.yml.
+    runs-on: ubuntu-latest
+    container:
+      image: {{ builder_registry }}/ansible-builder:latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: uv sync
+      - name: Molecule (docker)
+        run: uv run molecule test
+      - name: Destroy
+        if: always()
+        run: uv run molecule destroy
+{% if include_vagrant %}
+
+  vagrant:
+    # Host-mode runner with libvirt + KVM (mirrors the proven restic setup). If your
+    # libvirt runner is containerized instead, add `container:` with the
+    # {{ builder_registry }}/ansible-builder-vagrant image — see docs/ci-overview.md.
+    runs-on: [self-hosted, libvirt]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --group vagrant
+      - name: Molecule (vagrant)
+        run: make test-vm
+      - name: Destroy
+        if: always()
+        run: uv run molecule destroy -s vagrant
+{% endif %}

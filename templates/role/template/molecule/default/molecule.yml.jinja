@@ -1,0 +1,49 @@
+---
+# Docker scenario — fast; runs on GitHub public runners and on Forgejo.
+# Uses molecule's built-in "default" (delegated) driver + our own create/destroy
+# playbooks driving community.docker. This avoids molecule-plugins[docker], whose
+# create playbook is incompatible with ansible-core 2.21 (data-tagging changes).
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: default
+  options:
+    managed: true
+
+platforms:
+  - name: {{ role_name }}-debian12
+{% if needs_systemd %}
+    # systemd-enabled image so service/timer units can be tested in-container
+    image: geerlingguy/docker-debian12-ansible:latest
+    systemd: true
+{% else %}
+    image: python:3.12-slim-bookworm
+    systemd: false
+{% endif %}
+    groups:
+      - {{ role_name }}_servers
+
+provisioner:
+  name: ansible
+  playbooks:
+    create: create.yml
+    destroy: destroy.yml
+    converge: converge.yml
+    verify: verify.yml
+
+verifier:
+  name: ansible
+
+scenario:
+  name: default
+  test_sequence:
+    - dependency
+    - destroy
+    - create
+    - converge
+    - idempotence
+    - verify
+    - destroy

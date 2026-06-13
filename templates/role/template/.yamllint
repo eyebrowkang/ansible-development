@@ -1,0 +1,26 @@
+---
+extends: default
+
+rules:
+  line-length:
+    max: 160
+    level: warning
+  truthy:
+    # allow GitHub/Forgejo workflow `on:` keys without quoting
+    allowed-values: ["true", "false"]
+    check-keys: false
+  comments-indentation: disable
+  # the rules below keep this config compatible with ansible-lint's yaml rule
+  comments:
+    min-spaces-from-content: 1
+  braces:
+    max-spaces-inside: 1
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true
+
+ignore: |
+  .ansible/
+  .venv/
+  .copier-answers.yml
+  library/__pycache__/
