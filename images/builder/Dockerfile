@@ -11,6 +11,7 @@ RUN apt-get update \
         curl \
         git \
         make \
+        nodejs \
         openssh-client \
         shellcheck \
     && rm -rf /var/lib/apt/lists/*

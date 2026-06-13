@@ -7,7 +7,7 @@ FROM debian:12-slim
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ca-certificates curl git make openssh-client shellcheck \
+        ca-certificates curl git make nodejs openssh-client shellcheck \
         vagrant \
         qemu-system-x86 qemu-utils \
         libvirt-clients libvirt-daemon-system \

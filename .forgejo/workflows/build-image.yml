@@ -15,7 +15,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: docker:cli
+      # node + git so the JS actions/checkout can run; docker CLI is added below.
+      image: node:20-bookworm
     strategy:
       matrix:
         include:
@@ -25,6 +26,8 @@ jobs:
             image: ansible-builder-vagrant
     steps:
       - uses: actions/checkout@v4
+      - name: Install Docker CLI
+        run: apt-get update && apt-get install -y --no-install-recommends docker.io
       - name: Compute immutable tag
         run: echo "TAG=$(date +%Y%m%d)-$(echo "$GITHUB_SHA" | cut -c1-7)" >> "$GITHUB_ENV"
       - name: Log in to Forgejo registry
