@@ -20,6 +20,7 @@ copier 会询问（见 [`../templates/role/copier.yml`](../templates/role/copier
 | `include_vagrant` | 是否生成 vagrant 场景 |
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
+| `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `20250613-ab12cd3`），别用 `latest` |
 
 > **目录命名约定**：role 目录用 `<namespace>.<name>`（与 converge 里的 `role: namespace.role_name` 对应，molecule 把上级目录加入 `ANSIBLE_ROLES_PATH`）。
 

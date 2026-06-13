@@ -4,9 +4,7 @@
 # playbooks driving community.docker. This avoids molecule-plugins[docker], whose
 # create playbook is incompatible with ansible-core 2.21 (data-tagging changes).
 dependency:
-  name: galaxy
-  options:
-    requirements-file: requirements.yml
+  name: galaxy   # auto-installs molecule/default/collections.yml (scenario-absolute path)
 
 driver:
   name: default

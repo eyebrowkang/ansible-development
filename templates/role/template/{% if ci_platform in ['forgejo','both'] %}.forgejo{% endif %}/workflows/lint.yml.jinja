@@ -6,7 +6,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     container:
-      image: {{ builder_registry }}/ansible-builder:latest
+      image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
       - uses: actions/checkout@v4
       - run: uv sync

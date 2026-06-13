@@ -6,9 +6,7 @@
 # ANSIBLE_FILTER_PLUGINS so Ansible can find the vagrant module/filter. A bare
 # `molecule test -s vagrant` fails without those (see docs/molecule-301-workaround.md).
 dependency:
-  name: galaxy
-  options:
-    requirements-file: requirements.yml
+  name: galaxy   # auto-installs molecule/vagrant/collections.yml (scenario-absolute path)
 
 driver:
   name: vagrant
