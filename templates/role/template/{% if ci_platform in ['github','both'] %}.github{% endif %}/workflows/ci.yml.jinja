@@ -11,6 +11,12 @@ jobs:
       - run: uv sync
       - run: uv run yamllint .
       - run: uv run ansible-lint
+{% if shell_templates %}
+      - name: Render templates and run shellcheck
+        run: |
+          sudo apt-get update && sudo apt-get install -y shellcheck
+          uv run bash tests/shellcheck.sh
+{% endif %}
 
   molecule-docker:
     runs-on: ubuntu-latest

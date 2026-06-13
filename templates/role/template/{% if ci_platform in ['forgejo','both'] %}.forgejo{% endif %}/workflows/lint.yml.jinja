@@ -12,3 +12,7 @@ jobs:
       - run: uv sync
       - run: uv run yamllint .
       - run: uv run ansible-lint
+{% if shell_templates %}
+      - name: Render templates and run shellcheck
+        run: uv run bash tests/shellcheck.sh
+{% endif %}

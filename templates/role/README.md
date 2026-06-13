@@ -3,13 +3,13 @@
 Generate a new role into the workspace:
 
 ```bash
-uvx copier copy templates/role roles/<namespace>.<name>
-# or with the scaffold's own venv:
-uv run copier copy templates/role roles/<namespace>.<name>
+copier copy gh:eyebrowkang/ansible-development roles/<namespace>.<name>
+# or from a local checkout of this repo:
+uv run copier copy . roles/<namespace>.<name>
 ```
 
 You'll be asked for `role_name`, `namespace`, CI platform, whether to include the
-vagrant scenario, etc. (see [`copier.yml`](copier.yml)).
+vagrant scenario, etc. (see [`copier.yml`](../../copier.yml) at the repo root).
 
 Update an existing role when this template improves:
 

@@ -1,5 +1,5 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install lint test test-vm converge destroy
+.PHONY: help install lint test test-vm converge destroy{% if shell_templates %} shellcheck{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
@@ -8,6 +8,8 @@ help:
 	@echo "test-vm   - molecule test (vagrant scenario; needs 'uv sync --group vagrant' + libvirt/KVM)"
 	@echo "converge  - molecule converge (docker)"
 	@echo "destroy   - molecule destroy (docker)"
+{% if shell_templates %}	@echo "shellcheck- render shell templates and shellcheck them"
+{% endif %}
 
 install:
 	uv sync
@@ -15,6 +17,10 @@ install:
 lint:
 	uv run yamllint .
 	uv run ansible-lint
+{% if shell_templates %}
+shellcheck:
+	uv run bash tests/shellcheck.sh
+{% endif %}
 
 test:
 	uv run molecule test
