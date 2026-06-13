@@ -24,7 +24,7 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
 | `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
-| `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `20250613-ab12cd3`），别用 `latest` |
+| `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest` |
 
 > **目录命名约定**：role 目录用 `<namespace>.<name>`（与 converge 里的 `role: namespace.role_name` 对应，molecule 把上级目录加入 `ANSIBLE_ROLES_PATH`）。
 

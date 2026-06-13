@@ -110,6 +110,6 @@ builder_registry:
 
 builder_tag:
   type: str
-  help: "Builder image tag. The runner uses force_pull:false, so PIN the immutable tag produced by build-image.yml (e.g. 20250613-ab12cd3) rather than 'latest'."
+  help: "Builder image tag. The runner uses force_pull:false, so PIN the immutable tag produced by build-image.yml (e.g. sha-ab12cd3) rather than 'latest'."
   default: "latest"
   when: "{{ ci_platform in ['forgejo', 'both'] }}"

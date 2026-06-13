@@ -8,33 +8,48 @@ on:
       - .forgejo/workflows/build-image.yml
   workflow_dispatch:
 
-# Requires two repo/org settings on Forgejo:
-#   vars.REGISTRY        e.g. git.example.com
-#   secrets.REGISTRY_TOKEN   a token with package:write
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      # node + git so the JS actions/checkout can run; docker CLI is added below.
-      image: node:20-bookworm
+    permissions:
+      contents: read
+      packages: write
     strategy:
+      fail-fast: false
       matrix:
         include:
-          - dockerfile: Dockerfile
+          - dockerfile: images/builder/Dockerfile
             image: ansible-builder
-          - dockerfile: Dockerfile.vagrant
+            platforms: linux/amd64,linux/arm64
+          - dockerfile: images/builder/Dockerfile.vagrant
             image: ansible-builder-vagrant
+            platforms: linux/amd64   # vagrant/qemu stack: amd64 only (arm64 build is impractical)
     steps:
-      - uses: actions/checkout@v4
-      - name: Install Docker CLI
-        run: apt-get update && apt-get install -y --no-install-recommends docker.io
-      - name: Compute immutable tag
-        run: echo "TAG=$(date +%Y%m%d)-$(echo "$GITHUB_SHA" | cut -c1-7)" >> "$GITHUB_ENV"
-      - name: Log in to Forgejo registry
-        run: echo "${{ secrets.REGISTRY_TOKEN }}" | docker login "${{ vars.REGISTRY }}" -u "${{ github.actor }}" --password-stdin
-      - name: Build and push
-        run: |
-          IMG="${{ vars.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.image }}"
-          docker build -f "images/builder/${{ matrix.dockerfile }}" -t "$IMG:$TAG" -t "$IMG:latest" images/builder
-          docker push "$IMG:$TAG"
-          docker push "$IMG:latest"
+      - uses: actions/checkout@v5
+      # Push target = this instance's built-in container registry (host derived from the URL).
+      - id: registry
+        run: echo "host=${GITHUB_SERVER_URL#*://}" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ steps.registry.outputs.host }}
+          username: ${{ github.actor }}
+          # If the instance's actions token lacks package:write, set a REGISTRY_TOKEN secret (PAT).
+          password: ${{ secrets.REGISTRY_TOKEN || secrets.GITHUB_TOKEN }}
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ steps.registry.outputs.host }}/${{ github.repository_owner }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=sha
+      - uses: docker/build-push-action@v6
+        with:
+          context: images/builder
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platforms }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
