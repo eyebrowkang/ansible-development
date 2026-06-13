@@ -101,3 +101,9 @@ builder_registry:
   help: "Forgejo registry namespace for CI builder images, e.g. git.example.com/<owner>"
   default: "git.example.com/{{ namespace }}"
   when: "{{ ci_platform in ['forgejo', 'both'] }}"
+
+builder_tag:
+  type: str
+  help: "Builder image tag. The runner uses force_pull:false, so PIN the immutable tag produced by build-image.yml (e.g. 20250613-ab12cd3) rather than 'latest'."
+  default: "latest"
+  when: "{{ ci_platform in ['forgejo', 'both'] }}"
