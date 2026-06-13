@@ -6,16 +6,11 @@ molecule-plugins（最新 25.8.12，2025-08）已明显落后 molecule/ansible-c
 
 因此本模板的 **docker 场景改用 molecule 内置的 `default`（delegated）driver + 自写的 `create.yml`/`destroy.yml`（`community.docker`）**，完全不依赖 molecule-plugins，兼容 ansible-core 2.21（已在本地 colima 上端到端验证通过）。
 
-## vagrant 场景的同类风险 ⚠️
+## vagrant 场景：已验证可用于 ansible-core 2.21 ✅
 
-vagrant **只能**用 `molecule-plugins[vagrant]`（没有 ansible-native 替代）。它很可能存在与 docker driver 同样的 ansible-core 2.21 不兼容（data-tagging）。**截至目前尚未在 2.21 上实测过 vagrant 场景**。
+vagrant **只能**用 `molecule-plugins[vagrant]`（没有 ansible-native 替代）。曾担心它和 docker driver 一样在 2.21 上崩，但**已在 Arch Linux + libvirt 上实测 `make test-vm` 全流程通过**（`1 scenario (1 successful)`）——vagrant 插件没有 docker 插件那个 data-tagging 问题。
 
-请在你的 Linux + libvirt 机器上用 `make test-vm` 验证。若同样报 `invocation`/data-tagging 类错误，临时方案二选一：
-
-- 在该 role 的 `pyproject.toml` 把 `ansible-core` 暂时 pin 到 `>=2.18,<2.19`（plugin 兼容的最后一个大版本）；
-- 或等 molecule-plugins 发布兼容 2.21 的新版后解除 pin。
-
-docker 场景不受影响（已 ansible-native）。
+万一未来某个 ansible-core 版本打破它，应急方案：把该 role 的 `ansible-core` 临时 pin 到兼容版本，或等 molecule-plugins 更新。docker 场景不受影响（已 ansible-native）。
 
 ## molecule-plugins#301（vagrant 模块路径）
 

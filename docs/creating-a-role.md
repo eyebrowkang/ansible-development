@@ -23,14 +23,16 @@ copier 会询问（见 [`../templates/role/copier.yml`](../templates/role/copier
 
 > **目录命名约定**：role 目录用 `<namespace>.<name>`（与 converge 里的 `role: namespace.role_name` 对应，molecule 把上级目录加入 `ANSIBLE_ROLES_PATH`）。
 
-## 生成后
+## 生成后：先 git init（必需）
 
 ```bash
 cd roles/<namespace>.<name>
-git init && git add -A && git commit -m "init from template"   # 让 copier update 可用
+git init && git add -A && git commit -m "init from template"
 uv sync
 make test
 ```
+
+`git init` **不是可选的**：脚手架的 `.gitignore` 把 `roles/*` 整个忽略，molecule/ansible-compat 走 git 收集 role 文件时会因此找不到 scenario，报 `'molecule/<scenario>/molecule.yml' glob failed`。让 role 成为**独立 git 仓库**后即正常——这也正是设计意图（每个 role 自带 git、可独立 CI），并且是 `copier update` 的前提。
 
 ## 拉取模板更新
 

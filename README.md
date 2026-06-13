@@ -32,8 +32,10 @@ uv sync
 uv run copier copy templates/role roles/eyebrowkang.myrole
 # 按提示回答 role_name / namespace / CI 平台 / 是否含 vagrant 场景 ...
 
-# 3. 进入 role 跑测试
+# 3. 进入 role；先 git init（必需！roles/ 被脚手架 gitignore，
+#    role 不是独立 git 仓库的话 molecule 找不到 scenario，报 "glob failed"）
 cd roles/eyebrowkang.myrole
+git init && git add -A && git commit -m "init from template"
 uv sync
 make test        # docker 场景（快）
 make test-vm     # vagrant/libvirt 场景（需 KVM）

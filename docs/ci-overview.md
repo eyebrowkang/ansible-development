@@ -9,7 +9,7 @@
 
 docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 Forgejo。
 
-> **driver 说明**：docker 场景用 molecule **内置 `default`（delegated）driver** + 自写 `create.yml`/`destroy.yml`（`community.docker`），不依赖 molecule-plugins，兼容 ansible-core 2.21。vagrant 场景用 `molecule-plugins[vagrant]`——其与 2.21 的兼容性尚未实测，详见 [molecule-301-workaround.md](molecule-301-workaround.md)。
+> **driver 说明**：docker 场景用 molecule **内置 `default`（delegated）driver** + 自写 `create.yml`/`destroy.yml`（`community.docker`），不依赖 molecule-plugins，兼容 ansible-core 2.21。vagrant 场景用 `molecule-plugins[vagrant]`——已实测兼容 ansible-core 2.21，详见 [molecule-301-workaround.md](molecule-301-workaround.md)。
 
 ## DooD（你的 runner）
 

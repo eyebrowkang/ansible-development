@@ -16,6 +16,18 @@ _envops:
   lstrip_blocks: true
   keep_trailing_newline: true
 
+# Shown after generation. The git init step is REQUIRED: the scaffold gitignores
+# roles/*, so without the role being its own git repo, molecule can't discover its
+# scenarios ("glob failed").
+_message_after_copy: |
+  Role generated. Next steps (run inside the new role directory):
+
+    git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
+    uv sync
+    make test          # docker scenario
+  {% if include_vagrant %}  make test-vm       # vagrant scenario (needs libvirt + KVM)
+  {% endif %}
+
 # ---------------------------------------------------------------- questions ---
 
 role_name:
