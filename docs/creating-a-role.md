@@ -4,10 +4,13 @@
 
 ```bash
 uv sync                       # 一次性：装好 copier
-uv run copier copy templates/role roles/<namespace>.<name>
+# 本地（脚手架已 clone）：
+uv run copier copy . roles/<namespace>.<name>
+# 或直接用远程（也是 `copier update` 所用的源）：
+copier copy gh:eyebrowkang/ansible-development roles/<namespace>.<name>
 ```
 
-copier 会询问（见 [`../templates/role/copier.yml`](../templates/role/copier.yml)）：
+copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 
 | 问题 | 说明 |
 |------|------|
@@ -19,6 +22,7 @@ copier 会询问（见 [`../templates/role/copier.yml`](../templates/role/copier
 | `ci_platform` | github / forgejo / both |
 | `include_vagrant` | 是否生成 vagrant 场景 |
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
+| `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
 | `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `20250613-ab12cd3`），别用 `latest` |
 

@@ -29,7 +29,7 @@
 uv sync
 
 # 2. 生成一个新 role
-uv run copier copy templates/role roles/eyebrowkang.myrole
+uv run copier copy . roles/eyebrowkang.myrole       # 或远程：copier copy gh:eyebrowkang/ansible-development roles/...
 # 按提示回答 role_name / namespace / CI 平台 / 是否含 vagrant 场景 ...
 
 # 3. 进入 role；先 git init（必需！roles/ 被脚手架 gitignore，

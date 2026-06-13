@@ -12,6 +12,7 @@ RUN apt-get update \
         git \
         make \
         openssh-client \
+        shellcheck \
     && rm -rf /var/lib/apt/lists/*
 
 # docker client only (talks to the host daemon via the automounted socket)

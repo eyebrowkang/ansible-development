@@ -1,0 +1,47 @@
+---
+# Render this role's Jinja shell-script templates so they can be shellchecked
+# (see shellcheck.sh). Templates contain Jinja and can't be linted directly.
+#
+# STARTER: this loads defaults/ + vars/ and renders every templates/**/*.sh.j2.
+# If your scripts reference variables normally set in tasks (not defaults/vars),
+# add representative test values under `vars:` below, or extend the render loop.
+- name: Render shell templates for shellcheck
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    out_dir: "{{ render_out | default('/tmp/role-render') }}"
+    role_root: "{{ playbook_dir }}/.."
+    templates_dir: "{{ role_root }}/templates"
+    # TODO: add any extra variables your shell templates reference here.
+  tasks:
+    - name: Load role defaults and vars
+      ansible.builtin.include_vars:
+        file: "{{ item }}"
+      loop:
+        - "{{ role_root }}/defaults/main.yml"
+        - "{{ role_root }}/vars/main.yml"
+
+    - name: Find shell-script templates
+      ansible.builtin.find:
+        paths: "{{ role_root }}/templates"
+        patterns: "*.sh.j2"
+        recurse: true
+      register: _shell_templates
+
+    - name: Create output directory
+      ansible.builtin.file:
+        path: "{{ out_dir }}"
+        state: directory
+        mode: "0755"
+
+    - name: Render each shell template
+      ansible.builtin.template:
+        src: "{{ item.path }}"
+        # Flatten the templates/-relative path (foo/x.sh.j2 -> foo_x.sh) so scripts
+        # that share a basename in different subdirs don't overwrite each other.
+        dest: "{{ out_dir }}/{{ item.path | relpath(templates_dir) | replace('/', '_') | replace('.j2', '') }}"
+        mode: "0755"
+      loop: "{{ _shell_templates.files }}"
+      loop_control:
+        label: "{{ item.path | relpath(templates_dir) }}"

@@ -1,11 +1,12 @@
 # Copier configuration for the Ansible role template.
 #
-#   Generate:  uvx copier copy templates/role roles/<namespace>.<name>
-#   Update:    cd roles/<namespace>.<name> && uvx copier update --trust
+#   Generate (remote): copier copy gh:eyebrowkang/ansible-development roles/<namespace>.<name>
+#   Generate (local):  copier copy <path-to-this-repo> roles/<namespace>.<name>
+#   Update:            cd roles/<namespace>.<name> && copier update --trust
 #
-# See ../../docs/creating-a-role.md for the full workflow.
+# See docs/creating-a-role.md for the full workflow.
 
-_subdirectory: "template"
+_subdirectory: "templates/role/template"
 _answers_file: ".copier-answers.yml"
 _templates_suffix: ".jinja"
 _min_copier_version: "9.4.0"
@@ -95,6 +96,11 @@ needs_systemd:
   type: bool
   help: "Does the role manage systemd units? (uses a systemd-enabled image for the docker scenario)"
   default: true
+
+shell_templates:
+  type: bool
+  help: "Does this role render shell-script templates (templates/**/*.sh.j2) that should be shellchecked?"
+  default: false
 
 builder_registry:
   type: str
