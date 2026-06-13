@@ -1,0 +1,91 @@
+# Copier configuration for the Ansible role template.
+#
+#   Generate:  uvx copier copy templates/role roles/<namespace>.<name>
+#   Update:    cd roles/<namespace>.<name> && uvx copier update --trust
+#
+# See ../../docs/creating-a-role.md for the full workflow.
+
+_subdirectory: "template"
+_answers_file: ".copier-answers.yml"
+_templates_suffix: ".jinja"
+_min_copier_version: "9.4.0"
+
+# trim_blocks + lstrip_blocks make {% ... %} control lines render cleanly in YAML.
+_envops:
+  trim_blocks: true
+  lstrip_blocks: true
+  keep_trailing_newline: true
+
+# ---------------------------------------------------------------- questions ---
+
+role_name:
+  type: str
+  help: "Role name (lowercase; used as Galaxy role_name and inside files), e.g. restic"
+  placeholder: "myrole"
+  validator: >-
+    {% if not role_name %}role_name is required.
+    {% elif role_name != role_name.lower() %}role_name must be lowercase.
+    {% elif ' ' in role_name %}role_name must not contain spaces (use underscores).
+    {% elif role_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}role_name must start with a letter.
+    {% endif %}
+
+namespace:
+  type: str
+  help: "Galaxy namespace / author handle"
+  default: "eyebrowkang"
+
+author:
+  type: str
+  help: "Author name (meta/main.yml)"
+  default: "eyebrowkang"
+
+role_description:
+  type: str
+  help: "One-line role description"
+  default: ""
+
+min_ansible_version:
+  type: str
+  help: "Minimum ansible-core version (meta/main.yml)"
+  default: "2.16"
+
+galaxy_collections:
+  type: yaml
+  help: "Galaxy collections this role depends on"
+  default:
+    - community.general
+
+license:
+  type: str
+  help: "License (SPDX id) recorded in meta/main.yml"
+  choices:
+    GPL-3.0-or-later: "GPL-3.0-or-later"
+    MIT: "MIT"
+    Apache-2.0: "Apache-2.0"
+    Proprietary / none: "none"
+  default: "GPL-3.0-or-later"
+
+ci_platform:
+  type: str
+  help: "Which CI workflows to generate"
+  choices:
+    Forgejo Actions only: "forgejo"
+    GitHub Actions only: "github"
+    Both: "both"
+  default: "forgejo"
+
+include_vagrant:
+  type: bool
+  help: "Add the vagrant+libvirt molecule scenario? (VM-only needs: kernel modules, reboot, real networking)"
+  default: true
+
+needs_systemd:
+  type: bool
+  help: "Does the role manage systemd units? (uses a systemd-enabled image for the docker scenario)"
+  default: true
+
+builder_registry:
+  type: str
+  help: "Forgejo registry namespace for CI builder images, e.g. git.example.com/<owner>"
+  default: "git.example.com/{{ namespace }}"
+  when: "{{ ci_platform in ['forgejo', 'both'] }}"

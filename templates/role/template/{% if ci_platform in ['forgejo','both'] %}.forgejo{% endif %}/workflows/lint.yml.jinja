@@ -1,0 +1,14 @@
+---
+name: lint
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: {{ builder_registry }}/ansible-builder:latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: uv sync
+      - run: uv run yamllint .
+      - run: uv run ansible-lint

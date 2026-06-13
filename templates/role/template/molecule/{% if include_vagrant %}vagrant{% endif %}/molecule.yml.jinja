@@ -1,0 +1,49 @@
+---
+# Vagrant + libvirt scenario — VM-only needs (kernel modules, reboot, real networking).
+# Runs locally and on the self-hosted Forgejo [self-hosted, libvirt] runner.
+#
+# molecule-plugins#301: run this via `make test-vm`, which exports ANSIBLE_LIBRARY /
+# ANSIBLE_FILTER_PLUGINS so Ansible can find the vagrant module/filter. A bare
+# `molecule test -s vagrant` fails without those (see docs/molecule-301-workaround.md).
+dependency:
+  name: galaxy
+  options:
+    requirements-file: requirements.yml
+
+driver:
+  name: vagrant
+  provider:
+    name: libvirt
+
+platforms:
+  - name: {{ role_name }}-vm
+    box: generic/debian12
+    memory: 2048
+    cpus: 2
+    groups:
+      - {{ role_name }}_servers
+
+provisioner:
+  name: ansible
+  playbooks:
+    converge: converge.yml
+    verify: verify.yml
+  inventory:
+    host_vars:
+      {{ role_name }}-vm:
+        ansible_user: vagrant
+
+verifier:
+  name: ansible
+
+scenario:
+  name: vagrant
+  test_sequence:
+    - dependency
+    - destroy
+    - syntax
+    - create
+    - converge
+    - idempotence
+    - verify
+    - destroy
