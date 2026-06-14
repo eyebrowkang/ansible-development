@@ -23,8 +23,10 @@ uvx copier update --trust
 - `pyproject.toml` — uv-managed dev toolchain (`dev` group) + optional `vagrant` group
 - `molecule/default` — **Docker** scenario (fast; runs on GitHub & Forgejo)
 - `molecule/vagrant` — **Vagrant+libvirt** scenario (VM-only needs; local + self-hosted Forgejo) *(optional)*
-- `.github/workflows` and/or `.forgejo/workflows` — CI
+- `.github/workflows` and/or `.forgejo/workflows` — CI (+ optional GitHub release automation: release-please / Dependabot / Galaxy import)
 - `Makefile` — `make test` / `make test-vm` / `make lint`
-- `.yamllint`, `.ansible-lint`, `meta/main.yml`
+- `.pre-commit-config.yaml` (enable with `uvx pre-commit install`), `.yamllint.yml`, `.ansible-lint`, `meta/main.yml`
+
+> This repo also generates **collections** (`-d kind=collection`) — see [`../../docs/creating-a-collection.md`](../../docs/creating-a-collection.md).
 
 See [`../../docs/creating-a-role.md`](../../docs/creating-a-role.md) for the full workflow.

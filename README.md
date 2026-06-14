@@ -1,6 +1,6 @@
 # Ansible development
 
-个人的 Ansible 开发工具箱（meta-repo）：用 **copier 模板**生成自包含的 Ansible role，用 **uv** 管理工具链，用 **molecule** 双轨测试（Docker + Vagrant/libvirt），并为 **GitHub Actions** 与自托管 **Forgejo Actions** 提供开箱即用的 CI。
+个人的 Ansible 开发工具箱（meta-repo）：用 **copier 模板**生成自包含的 Ansible **role 或 collection**（`kind` 开关），用 **uv** 管理工具链，用 **molecule** 双轨测试（Docker + Vagrant/libvirt），并为 **GitHub Actions** 与自托管 **Forgejo Actions** 提供开箱即用的 CI（role 可选 release-please / Dependabot release 自动化）。
 
 > 旧的 conda 版脚手架已归档在 git tag `archive/conda-scaffold-v0`。
 
@@ -10,7 +10,8 @@
 
 | 路径 | 作用 |
 |------|------|
-| `templates/role/` | copier role 模板（生成新 role） |
+| `templates/role/` | copier role 模板（`kind=role`） |
+| `templates/collection/` | copier collection 模板（`kind=collection`） |
 | `images/builder/` | CI builder 镜像（预烤工具链，推 Forgejo registry） |
 | `docs/` | 工作流文档 |
 | `roles/` `collections/` | 薄工作区（内容被 gitignore，各自是独立 git 仓库） |
@@ -28,9 +29,9 @@
 # 1. 装好脚手架自己的工具（copier 等）
 uv sync
 
-# 2. 生成一个新 role
+# 2. 生成一个新 role（collection 见 docs/creating-a-collection.md）
 uv run copier copy . roles/eyebrowkang.myrole       # 或远程：copier copy gh:eyebrowkang/ansible-development roles/...
-# 按提示回答 role_name / namespace / CI 平台 / 是否含 vagrant 场景 ...
+# 按提示回答 kind=role / role_name / namespace / CI 平台 / 是否含 vagrant / 是否要 release 自动化 ...
 
 # 3. 进入 role；先 git init（必需！roles/ 被脚手架 gitignore，
 #    role 不是独立 git 仓库的话 molecule 找不到 scenario，报 "glob failed"）
@@ -58,7 +59,8 @@ make lint
 
 ## 进一步阅读
 
-- [docs/creating-a-role.md](docs/creating-a-role.md)——copier copy / update 流程
+- [docs/creating-a-role.md](docs/creating-a-role.md)——copier copy / update 流程、release 自动化、tasks/ 拆分约定
+- [docs/creating-a-collection.md](docs/creating-a-collection.md)——生成 collection、sanity + molecule 测试
 - [docs/ci-overview.md](docs/ci-overview.md)——GitHub vs Forgejo、DooD、builder 镜像
 - [docs/molecule-301-workaround.md](docs/molecule-301-workaround.md)——vagrant 场景的 #301 绕坑
 

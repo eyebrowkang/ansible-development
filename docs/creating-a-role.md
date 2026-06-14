@@ -23,6 +23,7 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `include_vagrant` | 是否生成 vagrant 场景 |
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
 | `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
+| `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Dependabot + Galaxy 导入 |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
 | `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest` |
 
@@ -49,3 +50,40 @@ uv run copier update --trust       # 要求 role 是干净的 git 仓库
 ```
 
 copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合并；冲突会生成 `.rej`，手动解决即可。这正是选 copier 而非 cookiecutter 的核心价值——模板可持续回填。
+
+> `kind` 默认 `role`，所以上面的命令不必显式带 `-d kind=role`。生成 collection 见 [creating-a-collection.md](creating-a-collection.md)。
+
+## release 自动化（仅 GitHub）
+
+`release_automation`（默认开，仅在 `ci_platform` 含 github 时询问）生成 `roles/eyebrowkang.garage` 同款的一整套：
+
+- `release-please-config.json` + `.release-please-manifest.json`——[release-please](https://github.com/googleapis/release-please) 按 conventional commits 自动开 release PR、打 tag、写 CHANGELOG。
+- `.github/workflows/release.yml`——release-please + 发布后 `ansible-galaxy role import` 导入 Galaxy。
+- `.github/workflows/pr-title.yml`——校验 PR 标题为 conventional commit（squash 合并用 PR 标题作 commit message，release-please 要解析它）。
+- `.github/dependabot.yml`——每周更新 `github-actions` 与 `uv` 依赖。
+
+需配置 secrets：`AUTOMATION_TOKEN`（细粒度 PAT，缺省回退 `GITHUB_TOKEN`）、`GALAXY_API_KEY`。
+
+> Dependabot 只在 github.com 跑；forgejo-only 的 role 不问这个开关、也不生成这些文件。
+
+## tasks/ 拆分约定（推荐，非强制）
+
+role 复杂后，建议把 `tasks/main.yml` 按阶段拆分、用 `include_tasks` + `when` 串起来（参考 `roles/eyebrowkang.garage`）：
+
+```yaml
+# tasks/main.yml
+- name: Validate
+  ansible.builtin.include_tasks: validate.yml
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+  when: not (myrole_upgrade | bool)
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+- name: Service
+  ansible.builtin.include_tasks: service.yml
+```
+
+约定（非强制——模板只给一个占位 `main.yml`，怎么拆由你定）：
+
+- 阶段文件职责单一：`validate` / `install` / `configure` / `service` / `upgrade` …
+- 对外变量用 `<role_name>_` 前缀（ansible-lint `var-naming` 的 production 要求）；内部计算的中间变量用 `_<role_name>_` 前缀。
