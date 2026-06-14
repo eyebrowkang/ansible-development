@@ -1,12 +1,15 @@
-# Copier configuration for the Ansible role template.
+# Copier configuration for the Ansible scaffold. Generates either a ROLE or a
+# COLLECTION, selected by the `kind` question (dynamic _subdirectory).
 #
-#   Generate (remote): copier copy gh:eyebrowkang/ansible-development roles/<namespace>.<name>
-#   Generate (local):  copier copy <path-to-this-repo> roles/<namespace>.<name>
-#   Update:            cd roles/<namespace>.<name> && copier update --trust
+#   Generate (remote): copier copy gh:eyebrowkang/ansible-development <dest>
+#   Generate (local):  copier copy <path-to-this-repo> <dest>
+#   Update:            cd <dest> && copier update --trust
 #
-# See docs/creating-a-role.md for the full workflow.
+# Roles       -> dest = roles/<namespace>.<name>
+# Collections -> dest = collections/ansible_collections/<namespace>/<name>
+# See docs/creating-a-role.md and docs/creating-a-collection.md for the full workflow.
 
-_subdirectory: "templates/role/template"
+_subdirectory: "templates/{{ kind }}/template"
 _answers_file: ".copier-answers.yml"
 _templates_suffix: ".jinja"
 _min_copier_version: "9.4.0"
@@ -18,9 +21,10 @@ _envops:
   keep_trailing_newline: true
 
 # Shown after generation. The git init step is REQUIRED: the scaffold gitignores
-# roles/*, so without the role being its own git repo, molecule can't discover its
-# scenarios ("glob failed").
+# roles/* and collections/*, so without the artifact being its own git repo,
+# molecule can't discover its scenarios ("glob failed").
 _message_after_copy: |
+  {% if kind == 'role' %}
   Role generated. Next steps (run inside the new role directory):
 
     git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
@@ -28,19 +32,26 @@ _message_after_copy: |
     make test          # docker scenario
   {% if include_vagrant %}  make test-vm       # vagrant scenario (needs libvirt + KVM)
   {% endif %}
+  {% else %}
+  Collection generated. Next steps (run inside the new collection directory):
 
-# ---------------------------------------------------------------- questions ---
+    git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
+    uv sync
+    make sanity        # ansible-test sanity
+    make test          # molecule (example role)
+  {% endif %}
 
-role_name:
+# ============================================================= what to generate ===
+
+kind:
   type: str
-  help: "Role name (lowercase; used as Galaxy role_name and inside files), e.g. restic"
-  placeholder: "myrole"
-  validator: >-
-    {% if not role_name %}role_name is required.
-    {% elif role_name != role_name.lower() %}role_name must be lowercase.
-    {% elif ' ' in role_name %}role_name must not contain spaces (use underscores).
-    {% elif role_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}role_name must start with a letter.
-    {% endif %}
+  help: "Generate an Ansible role or an Ansible collection?"
+  choices:
+    Ansible role: "role"
+    Ansible collection: "collection"
+  default: "role"
+
+# ====================================================================== shared ===
 
 namespace:
   type: str
@@ -49,34 +60,23 @@ namespace:
 
 author:
   type: str
-  help: "Author name (meta/main.yml)"
+  help: "Author name (role meta/main.yml or collection galaxy.yml)"
   default: "eyebrowkang"
-
-role_description:
-  type: str
-  help: "One-line role description"
-  default: ""
-
-min_ansible_version:
-  type: str
-  help: "Minimum ansible-core version (meta/main.yml)"
-  default: "2.16"
-
-galaxy_collections:
-  type: yaml
-  help: "Galaxy collections this role depends on"
-  default:
-    - community.general
 
 license:
   type: str
-  help: "License (SPDX id) recorded in meta/main.yml"
+  help: "License (SPDX id)"
   choices:
     GPL-3.0-or-later: "GPL-3.0-or-later"
     MIT: "MIT"
     Apache-2.0: "Apache-2.0"
     Proprietary / none: "none"
   default: "GPL-3.0-or-later"
+
+min_ansible_version:
+  type: str
+  help: "Minimum ansible-core version (use full X.Y.Z — collection meta/runtime.yml requires it)"
+  default: "2.16.0"
 
 ci_platform:
   type: str
@@ -87,20 +87,92 @@ ci_platform:
     Both: "both"
   default: "forgejo"
 
+# =================================================================== role-only ===
+
+role_name:
+  type: str
+  when: "{{ kind == 'role' }}"
+  help: "Role name (lowercase; used as Galaxy role_name and inside files), e.g. restic"
+  placeholder: "myrole"
+  validator: >-
+    {% if not role_name %}role_name is required.
+    {% elif role_name != role_name.lower() %}role_name must be lowercase.
+    {% elif ' ' in role_name %}role_name must not contain spaces (use underscores).
+    {% elif role_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}role_name must start with a letter.
+    {% endif %}
+
+role_description:
+  type: str
+  when: "{{ kind == 'role' }}"
+  help: "One-line role description"
+  default: ""
+
+galaxy_collections:
+  type: yaml
+  when: "{{ kind == 'role' }}"
+  help: "Galaxy collections this role depends on"
+  default:
+    - community.general
+
 include_vagrant:
   type: bool
+  when: "{{ kind == 'role' }}"
   help: "Add the vagrant+libvirt molecule scenario? (VM-only needs: kernel modules, reboot, real networking)"
   default: true
 
 needs_systemd:
   type: bool
+  when: "{{ kind == 'role' }}"
   help: "Does the role manage systemd units? (uses a systemd-enabled image for the docker scenario)"
   default: true
 
 shell_templates:
   type: bool
+  when: "{{ kind == 'role' }}"
   help: "Does this role render shell-script templates (templates/**/*.sh.j2) that should be shellchecked?"
   default: false
+
+release_automation:
+  type: bool
+  when: "{{ kind == 'role' and ci_platform in ['github', 'both'] }}"
+  help: "Add GitHub release automation (release-please + conventional PR-title check + Dependabot + Galaxy import)?"
+  default: "{{ kind == 'role' and ci_platform in ['github', 'both'] }}"
+
+# ============================================================= collection-only ===
+
+collection_name:
+  type: str
+  when: "{{ kind == 'collection' }}"
+  help: "Collection name (lowercase; the `name` field in galaxy.yml), e.g. bootstrap"
+  placeholder: "mycollection"
+  validator: >-
+    {% if not collection_name %}collection_name is required.
+    {% elif collection_name != collection_name.lower() %}collection_name must be lowercase.
+    {% elif ' ' in collection_name %}collection_name must not contain spaces (use underscores).
+    {% elif collection_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}collection_name must start with a letter.
+    {% endif %}
+
+collection_description:
+  type: str
+  when: "{{ kind == 'collection' }}"
+  help: "One-line collection description"
+  default: ""
+
+collection_dependencies:
+  type: yaml
+  when: "{{ kind == 'collection' }}"
+  help: "Collection dependencies for galaxy.yml (a map of name: version_spec)"
+  default:
+    community.general: ">=11.0.0"
+
+collection_tags:
+  type: yaml
+  when: "{{ kind == 'collection' }}"
+  help: "galaxy.yml tags (a list; include one Galaxy namespace tag: tools, infrastructure, linux, ...)"
+  default:
+    - tools
+
+# ================================================= shared: Forgejo builder image ===
 
 builder_registry:
   type: str
