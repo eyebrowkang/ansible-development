@@ -1,9 +1,10 @@
 ---
 name: test-template
-# Self-test for the copier template. Generates a role for each answer combination and
-# lints it (every conditional path rendered at least once), plus a molecule docker smoke
-# on the default answers. Runs on the self-hosted Forgejo runner in the builder image —
-# this is our own trusted template code; molecule reaches the host daemon via DooD.
+# Self-test for the copier template. Generates a role / a collection across the answer
+# matrix and lints them (every conditional path rendered at least once), plus gated
+# molecule (docker) + ansible-test sanity smokes. Runs on the self-hosted Forgejo runner
+# in the builder image — this is our own trusted template code; molecule reaches the
+# host daemon via DooD.
 on:
   push:
     branches: [main]
@@ -23,10 +24,10 @@ on:
   workflow_dispatch:
 
 jobs:
-  lint:
-    # The matrix is chosen so every conditional path renders at least once — the CI
-    # dirs, the vagrant scenario, tests/, and the systemd-vs-slim image — NOT the full
-    # 24-way product. role_name has no default in copier.yml, so always pass it.
+  lint-role:
+    # Generate a role per answer combination and lint it. The matrix exercises every
+    # conditional path (CI dirs, vagrant scenario, tests/, systemd image, release
+    # automation) at least once — NOT the full product. role_name has no default.
     runs-on: ubuntu-latest
     container:
       image: git.utlas.de/eyebrowkang/ansible-builder:latest
@@ -37,59 +38,82 @@ jobs:
           - name: defaults        # forgejo CI dir + vagrant scenario + systemd image
             data: ""
             shellcheck: false
-          - name: github          # .github CI dir
+          - name: github-release  # .github CI dir + release automation bundle
             data: -d ci_platform=github
             shellcheck: false
-          - name: both-shell      # both CI dirs + tests/ dir + shellcheck step
-            data: -d ci_platform=both -d shell_templates=true
+          - name: both-shell      # both CI dirs + tests/ dir + shellcheck, release off
+            data: -d ci_platform=both -d shell_templates=true -d release_automation=false
             shellcheck: true
-          - name: minimal         # no-vagrant path + non-systemd (slim) image
+          - name: minimal          # no-vagrant path + non-systemd (slim) image
             data: -d include_vagrant=false -d needs_systemd=false
             shellcheck: false
     steps:
       - uses: actions/checkout@v5
-
       - name: Install scaffold toolchain (copier)
         run: uv sync
-
       - name: Generate role (${{ matrix.name }})
         run: >-
           uv run copier copy --defaults -d role_name=testrole ${{ matrix.data }}
           . "${{ runner.temp }}/eyebrowkang.testrole"
-
       # REQUIRED before molecule/ansible-lint: the role must be its own git repo or
       # ansible-compat's git file collection fails with "glob failed".
-      # See docs/creating-a-role.md.
       - name: git init the generated role
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
           git init -q
           git add -A
           git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
-
       - name: Install role toolchain
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv sync
-
-      # ansible-lint needs the collections present (mirrors the generated ci.yml ordering).
       - name: Install Galaxy collections
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run ansible-galaxy collection install -r molecule/default/collections.yml
-
       - name: yamllint
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run yamllint .
-
       - name: ansible-lint
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run ansible-lint
-
       - name: shellcheck rendered templates
         if: ${{ matrix.shellcheck }}
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run bash tests/shellcheck.sh
 
-  molecule-smoke:
+  lint-collection:
+    # Generate a collection (both CI platforms) and lint it. Rendered under an
+    # ansible_collections/<ns>/<name> path so ansible-lint stays collection-aware.
+    runs-on: ubuntu-latest
+    container:
+      image: git.utlas.de/eyebrowkang/ansible-builder:latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Generate collection
+        run: >-
+          uv run copier copy --defaults -d kind=collection -d collection_name=testcoll
+          -d ci_platform=both . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
+      - name: git init the generated collection
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: Install collection toolchain
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv sync
+      - name: Install Galaxy collections
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+      - name: yamllint
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run yamllint .
+      - name: ansible-lint
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run ansible-lint
+
+  smoke-role:
     # End-to-end docker scenario on the default-answers role. Gated to main/dispatch:
     # it creates a privileged systemd instance on the host daemon via the runner's
     # automounted docker.sock (instance privilege comes from create.yml, not this job).
@@ -99,29 +123,58 @@ jobs:
       image: git.utlas.de/eyebrowkang/ansible-builder:latest
     steps:
       - uses: actions/checkout@v5
-
       - name: Install scaffold toolchain (copier)
         run: uv sync
-
       - name: Generate role (defaults)
         run: uv run copier copy --defaults -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
-
       - name: git init the generated role
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
           git init -q
           git add -A
           git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
-
       - name: Install role toolchain
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv sync
-
       - name: Molecule (docker)
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run molecule test
-
       - name: Destroy
         if: always()
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: uv run molecule destroy
+
+  smoke-collection:
+    # ansible-test sanity (--venv) + molecule (example role) on a generated collection.
+    # Gated to main/dispatch (sanity --venv is slow; molecule needs the DooD daemon).
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    container:
+      image: git.utlas.de/eyebrowkang/ansible-builder:latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Generate collection
+        run: >-
+          uv run copier copy --defaults -d kind=collection -d collection_name=testcoll
+          . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
+      - name: git init the generated collection
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: Install collection toolchain
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv sync
+      - name: ansible-test sanity
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run ansible-test sanity --venv --color
+      - name: Molecule (example role)
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run molecule test
+      - name: Destroy
+        if: always()
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run molecule destroy
