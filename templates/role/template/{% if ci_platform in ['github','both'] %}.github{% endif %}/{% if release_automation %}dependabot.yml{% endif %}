@@ -1,0 +1,18 @@
+---
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: ci
+
+  # uv is a native Dependabot ecosystem (since 2025-03); it reads pyproject.toml
+  # + uv.lock. Version constraints in pyproject.toml are required for it to open PRs.
+  - package-ecosystem: uv
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: chore
