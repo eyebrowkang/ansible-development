@@ -17,7 +17,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # docker client only (talks to the host daemon via the automounted socket)
-COPY --from=docker:cli /usr/local/bin/docker /usr/local/bin/docker
+COPY --from=docker:28-cli /usr/local/bin/docker /usr/local/bin/docker
 
 # uv (pinned) provides Python and installs each role's deps from its uv.lock
 COPY --from=ghcr.io/astral-sh/uv:0.11 /uv /uvx /usr/local/bin/

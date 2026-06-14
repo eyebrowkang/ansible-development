@@ -25,6 +25,6 @@ uvx copier update --trust
 - `molecule/vagrant` — **Vagrant+libvirt** scenario (VM-only needs; local + self-hosted Forgejo) *(optional)*
 - `.github/workflows` and/or `.forgejo/workflows` — CI
 - `Makefile` — `make test` / `make test-vm` / `make lint`
-- `.yamllint`, `.ansible-lint`, `meta/main.yml`, `requirements.yml`
+- `.yamllint`, `.ansible-lint`, `meta/main.yml`
 
 See [`../../docs/creating-a-role.md`](../../docs/creating-a-role.md) for the full workflow.

@@ -11,10 +11,9 @@ dependencies = []
 [tool.uv]
 package = false
 
-# Tooling for the scaffold itself: the copier generator + pre-commit.
+# Tooling for the scaffold itself: the copier generator.
 # Run `uvx copier copy templates/role roles/<name>` or `uv run copier ...`.
 [dependency-groups]
 dev = [
     "copier>=9.15,<10",
-    "pre-commit>=4",
 ]
