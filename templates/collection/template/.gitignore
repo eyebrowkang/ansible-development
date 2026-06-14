@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+*.retry
+.ansible/
+
+# Built collection artifacts
+*.tar.gz
+
+# ansible-test output
+tests/output/

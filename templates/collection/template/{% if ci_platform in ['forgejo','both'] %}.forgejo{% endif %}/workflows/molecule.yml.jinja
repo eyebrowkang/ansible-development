@@ -1,0 +1,28 @@
+---
+name: molecule
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: ansible_collections/{{ namespace }}/{{ collection_name }}
+
+jobs:
+  molecule:
+    # Container job; the runner's automounted docker.sock (DooD) lets molecule create
+    # the example-role instance on the host daemon. The role is resolved by short name.
+    runs-on: ubuntu-latest
+    container:
+      image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ansible_collections/{{ namespace }}/{{ collection_name }}
+      - run: uv sync
+      - name: Molecule (example role)
+        run: uv run molecule test
+      - name: Destroy
+        if: always()
+        run: uv run molecule destroy

@@ -1,0 +1,47 @@
+---
+namespace: {{ namespace }}
+name: {{ collection_name }}
+version: 0.1.0
+readme: README.md
+authors:
+  - {{ author }}
+description: {{ collection_description or collection_name }}
+{% if license != 'none' %}
+license:
+  - {{ license }}
+{% endif %}
+# Update these URLs to your real repository (Galaxy requires `repository`).
+repository: https://github.com/{{ namespace }}/ansible-collection-{{ collection_name }}
+homepage: https://github.com/{{ namespace }}/ansible-collection-{{ collection_name }}
+issues: https://github.com/{{ namespace }}/ansible-collection-{{ collection_name }}/issues
+{% if collection_tags %}
+tags:
+{% for t in collection_tags %}
+  - {{ t }}
+{% endfor %}
+{% else %}
+tags: []
+{% endif %}
+{% if collection_dependencies %}
+dependencies:
+{% for dep_name, dep_version in collection_dependencies.items() %}
+  {{ dep_name }}: "{{ dep_version }}"
+{% endfor %}
+{% else %}
+dependencies: {}
+{% endif %}
+# Keep dev/CI scaffolding out of the built collection artifact.
+build_ignore:
+  - .git
+  - .github
+  - .forgejo
+  - .venv
+  - .ansible
+  - .copier-answers.yml
+  - extensions
+  - pyproject.toml
+  - uv.lock
+  - Makefile
+  - .pre-commit-config.yaml
+  - .yamllint.yml
+  - .python-version

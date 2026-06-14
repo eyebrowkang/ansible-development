@@ -1,0 +1,21 @@
+[project]
+name = "{{ namespace }}-{{ collection_name }}"
+version = "0"
+description = "{{ collection_description }}"
+requires-python = ">=3.12"
+dependencies = []
+
+# A collection is not a distributable wheel — don't build/install this dir.
+[tool.uv]
+package = false
+
+# Dev toolchain. `ansible-test` ships with ansible-core (sanity needs no extra dep);
+# molecule drives the example role's docker scenario via the built-in delegated driver.
+[dependency-groups]
+dev = [
+    "ansible-core>=2.21,<2.22",
+    "molecule>=26,<27",
+    "docker>=7",
+    "ansible-lint>=26,<27",
+    "yamllint>=1.35",
+]

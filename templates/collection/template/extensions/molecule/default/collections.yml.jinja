@@ -1,0 +1,7 @@
+---
+collections:
+  # community.docker provides docker_container (create.yml) and the docker connection plugin
+  - community.docker
+{% for dep_name, dep_version in collection_dependencies.items() %}
+  - {{ dep_name }}
+{% endfor %}

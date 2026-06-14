@@ -1,0 +1,43 @@
+---
+- name: Create
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Create molecule instance(s)
+      community.docker.docker_container:
+        name: "{{ item.name }}"
+        image: "{{ item.image }}"
+        command: "{{ omit if (item.systemd | default(false)) else 'sleep infinity' }}"
+        state: started
+        recreate: true
+        pull: true
+        privileged: "{{ item.systemd | default(false) }}"
+        cgroupns_mode: "{{ 'host' if (item.systemd | default(false)) else omit }}"
+        volumes: "{{ ['/sys/fs/cgroup:/sys/fs/cgroup:rw'] if (item.systemd | default(false)) else omit }}"
+        tmpfs: "{{ ['/run', '/tmp'] if (item.systemd | default(false)) else omit }}"
+      register: result
+      loop: "{{ molecule_yml.platforms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Build instance config
+      ansible.builtin.set_fact:
+        instance_conf: >-
+          {{ instance_conf | default([]) + [{
+              'instance': item.name,
+              'address': item.name,
+              'user': 'root',
+              'connection': 'community.docker.docker',
+          }] }}
+      loop: "{{ molecule_yml.platforms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Dump instance config
+      ansible.builtin.copy:
+        content: |
+          # Molecule managed
+          {{ instance_conf | to_json | from_json | to_yaml }}
+        dest: "{{ molecule_instance_config }}"
+        mode: "0600"

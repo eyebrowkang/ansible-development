@@ -1,0 +1,33 @@
+---
+name: lint
+on: [push, pull_request]
+
+defaults:
+  run:
+    working-directory: ansible_collections/{{ namespace }}/{{ collection_name }}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ansible_collections/{{ namespace }}/{{ collection_name }}
+      - run: uv sync
+      - run: uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+      - run: uv run yamllint .
+      - run: uv run ansible-lint
+
+  sanity:
+    runs-on: ubuntu-latest
+    container:
+      image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ansible_collections/{{ namespace }}/{{ collection_name }}
+      - run: uv sync
+      - name: ansible-test sanity
+        run: uv run ansible-test sanity --venv --color

@@ -1,0 +1,35 @@
+# Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
+.PHONY: help install lint sanity test converge destroy
+
+help:
+	@echo "install   - uv sync (dev toolchain)"
+	@echo "lint      - yamllint + ansible-lint"
+	@echo "sanity    - ansible-test sanity (docker)"
+	@echo "test      - molecule test for the example role (docker)"
+	@echo "converge  - molecule converge (example role)"
+	@echo "destroy   - molecule destroy (example role)"
+
+install:
+	uv sync
+
+lint:
+	uv run yamllint .
+	uv run ansible-lint
+
+# ansible-test must run from within ansible_collections/<ns>/<name>/ — which this
+# directory's path already satisfies in the workspace. --venv isolates the sanity
+# test deps in their own venv (no docker needed; works under the Forgejo DooD runner,
+# where --docker's sibling-container bind mounts would miss the checked-out collection).
+sanity:
+	uv run ansible-test sanity --venv --color
+
+# The collection-level molecule scenario converges the example role by its short name
+# (molecule.yml sets ANSIBLE_ROLES_PATH to roles/). Add more scenarios under molecule/.
+test:
+	uv run molecule test
+
+converge:
+	uv run molecule converge
+
+destroy:
+	uv run molecule destroy
