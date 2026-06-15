@@ -231,7 +231,7 @@ jobs:
     # self-test's coverage of the vagrant track (docs/molecule-301-workaround.md).
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     needs: resolve-image
-    runs-on: [self-hosted, libvirt]
+    runs-on: [self-hosted, kvm]
     container:
       image: ${{ needs.resolve-image.outputs.vagrant }}
       options: --privileged

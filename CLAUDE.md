@@ -71,7 +71,7 @@ See `docs/creating-a-collection.md`.
 Roles get CI for two platforms (chosen by the `ci_platform` answer):
 
 - **GitHub Actions** (`.github/workflows/ci.yml`) — public `ubuntu-latest`, docker scenario only (no reliable KVM), uses `setup-uv`.
-- **Forgejo Actions** (`.forgejo/workflows/{lint,molecule}.yml`) — self-hosted; runs lint + docker in a **builder-image container job**, and the vagrant scenario **containerized** (`ansible-builder-vagrant` + `options: --privileged`, libvirtd started in-job) on a `[self-hosted, libvirt]` runner. Host-mode is the documented alternative.
+- **Forgejo Actions** (`.forgejo/workflows/{lint,molecule}.yml`) — self-hosted; runs lint + docker in a **builder-image container job**, and the vagrant scenario **containerized** (`ansible-builder-vagrant` + `options: --privileged`, libvirtd started in-job) on a `[self-hosted, kvm]` runner. Host-mode is the documented alternative.
 
 **Builder images** (`images/builder/`): `ansible-builder` is lean (only the docker *client* — under the runner's DooD setup the host docker socket is automounted, so molecule creates instances on the host daemon as siblings); `ansible-builder-vagrant` adds the full QEMU/libvirt/Vagrant stack and is now **required** (the role vagrant job runs in it by default). Base images (debian/docker-cli/uv) are pinned by `@sha256` digest + a fixed `uv python` patch, so a given `sha-<short>` rebuilds reproducibly (tag locks the recipe, digests lock the product); refresh with `docker buildx imagetools inspect <img>`. Two hard constraints when touching `build-image.yml`:
 

@@ -5,7 +5,7 @@
 | | runner | docker 场景 | vagrant 场景 |
 |---|---|---|---|
 | **GitHub Actions**（开源） | 公共 `ubuntu-latest` | ✓ 用 setup-uv | ✗（无可靠 KVM） |
-| **Forgejo Actions**（自托管） | 你的 runner | ✓ 用 builder 镜像 | ✓ 容器化 `[self-hosted, libvirt]` |
+| **Forgejo Actions**（自托管） | 你的 runner | ✓ 用 builder 镜像 | ✓ 容器化 `[self-hosted, kvm]` |
 
 docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 Forgejo。
 
@@ -34,7 +34,7 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 ## vagrant job：默认容器化
 
-生成的 vagrant job 默认 `runs-on: [self-hosted, libvirt]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里、`options: --privileged`（暴露 `/dev/kvm`），跑 molecule 前先手动起 `virtlogd`/`libvirtd`。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
+生成的 vagrant job 默认 `runs-on: [self-hosted, kvm]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里、`options: --privileged`（暴露 `/dev/kvm`），跑 molecule 前先手动起 `virtlogd`/`libvirtd`。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
 
 > ⚠ 容器内跑 libvirt/KVM 依赖宿主暴露 `/dev/kvm` + privileged + 嵌套虚拟化；首次在你的 runner 上请实跑 `make test-vm` 确认（网络 / `dnsmasq` 这类细节可能要调）。脚手架自测的 `smoke-role-vagrant`（gate 到 main/dispatch）用同款配置做冒烟。
 

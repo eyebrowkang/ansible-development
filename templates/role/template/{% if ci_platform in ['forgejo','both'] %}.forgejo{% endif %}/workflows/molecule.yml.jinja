@@ -27,7 +27,7 @@ jobs:
     # --privileged so it can reach /dev/kvm and run libvirtd inside the container (this
     # runner runs every job in Docker; nothing is installed on the host). The image ships
     # uv, so there's no setup-uv step. Host-mode is the alternative — see docs/ci-overview.md.
-    runs-on: [self-hosted, libvirt]
+    runs-on: [self-hosted, kvm]
     container:
       image: {{ builder_registry }}/ansible-builder-vagrant:{{ builder_tag }}
       options: --privileged
