@@ -2,13 +2,15 @@
 
 ## 生成
 
+推荐用**远程 URL** 生成（也是 `copier update` 拉取的源，记下的 `_src_path` 可移植）：
+
 ```bash
 uv sync                       # 一次性：装好 copier
-# 本地（脚手架已 clone）：
-uv run copier copy . roles/<namespace>.<name>
-# 或直接用远程（也是 `copier update` 所用的源）：
-copier copy gh:eyebrowkang/ansible-development roles/<namespace>.<name>
+copier copy https://git.utlas.de/eyebrowkang/ansible-development.git roles/<namespace>.<name>
 ```
+
+> 仅做脚手架本地调试时可用 `uv run copier copy . <dest>`，但它把 `_src_path` 记成 `.`（不可移植）——
+> 进了 role 目录后 `copier update` 会失效。正式 role 别用这种；要用本地源就给**绝对路径**。
 
 copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 
@@ -55,7 +57,7 @@ copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合�
 
 ## release 自动化（仅 GitHub）
 
-`release_automation`（默认开，仅在 `ci_platform` 含 github 时询问）生成 `roles/eyebrowkang.garage` 同款的一整套：
+`release_automation`（默认开，仅在 `ci_platform` 含 github 时询问）生成一整套 GitHub release 自动化：
 
 - `release-please-config.json` + `.release-please-manifest.json`——[release-please](https://github.com/googleapis/release-please) 按 conventional commits 自动开 release PR、打 tag、写 CHANGELOG。
 - `.github/workflows/release.yml`——release-please + 发布后 `ansible-galaxy role import` 导入 Galaxy。
@@ -68,7 +70,7 @@ copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合�
 
 ## tasks/ 拆分约定（推荐，非强制）
 
-role 复杂后，建议把 `tasks/main.yml` 按阶段拆分、用 `include_tasks` + `when` 串起来（参考 `roles/eyebrowkang.garage`）：
+role 复杂后，建议把 `tasks/main.yml` 按阶段拆分、用 `include_tasks` + `when` 串起来：
 
 ```yaml
 # tasks/main.yml

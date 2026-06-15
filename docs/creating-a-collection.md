@@ -7,11 +7,11 @@ collection 走 `kind=collection`，生成进 `collections/ansible_collections/<n
 
 ```bash
 uv sync                       # 一次性：装好 copier
-# 本地（脚手架已 clone）：
-uv run copier copy . collections/ansible_collections/<namespace>/<name> -d kind=collection
-# 或远程：
-copier copy gh:eyebrowkang/ansible-development \
+# 正式 collection 用远程 URL（_src_path 可移植，copier update 才干净）：
+copier copy https://git.utlas.de/eyebrowkang/ansible-development.git \
   collections/ansible_collections/<namespace>/<name> -d kind=collection
+# 仅脚手架本地调试用（会记下不可移植的 _src_path: .）：
+uv run copier copy . collections/ansible_collections/<namespace>/<name> -d kind=collection
 ```
 
 copier 会询问（collection 相关）：

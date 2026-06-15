@@ -23,9 +23,10 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 `images/builder/` 把工具链预烤进镜像，推到 Forgejo registry，CI 容器 job 直接拉，免去每次现装。
 
-因为 runner 是 `force_pull: false`，**必须用不可变 tag**（`YYYYMMDD-<sha>`），否则推了新 `:latest` 也不会被重新拉取。
+因为 runner 是 `force_pull: false`，**必须用不可变 tag**（`build-image.yml` 经 `type=sha` 产出的 `sha-<short>`），否则推了新 `:latest` 也不会被重新拉取。
 
-需要在 Forgejo 配置：`vars.REGISTRY`（registry 主机）、`secrets.REGISTRY_TOKEN`（`package:write`）。
+- **推镜像**（`build-image.yml`）：registry 主机由 `GITHUB_SERVER_URL` 自动推导，无需配置；仅当实例的 actions token 不能写 package 时，才需配 `secrets.REGISTRY_TOKEN`（PAT，`package:write`）。
+- **拉镜像**（生成的 role CI）：job 容器镜像地址来自生成时回答的 `builder_registry` / `builder_tag`（已烤进 workflow 文件）；故 `builder_tag` 要 pin `sha-<short>`，别用 `latest`。
 
 ## vagrant job：host-mode vs 容器化
 

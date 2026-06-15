@@ -1,8 +1,8 @@
 # Copier configuration for the Ansible scaffold. Generates either a ROLE or a
 # COLLECTION, selected by the `kind` question (dynamic _subdirectory).
 #
-#   Generate (remote): copier copy gh:eyebrowkang/ansible-development <dest>
-#   Generate (local):  copier copy <path-to-this-repo> <dest>
+#   Generate (remote): copier copy https://git.utlas.de/eyebrowkang/ansible-development.git <dest>
+#   Generate (local):  copier copy <abs-path-to-this-repo> <dest>   # NOT `.` — records a non-portable _src_path
 #   Update:            cd <dest> && copier update --trust
 #
 # Roles       -> dest = roles/<namespace>.<name>

@@ -30,7 +30,9 @@
 uv sync
 
 # 2. 生成一个新 role（collection 见 docs/creating-a-collection.md）
-uv run copier copy . roles/eyebrowkang.myrole       # 或远程：copier copy gh:eyebrowkang/ansible-development roles/...
+#    正式 role 用远程 URL（_src_path 可移植，copier update 才干净）：
+uv run copier copy https://git.utlas.de/eyebrowkang/ansible-development.git roles/eyebrowkang.myrole
+#    （仅脚手架本地调试可用 `uv run copier copy . <dest>`，它会记下不可移植的 _src_path: .）
 # 按提示回答 kind=role / role_name / namespace / CI 平台 / 是否含 vagrant / 是否要 release 自动化 ...
 
 # 3. 进入 role；先 git init（必需！roles/ 被脚手架 gitignore，

@@ -3,8 +3,8 @@
 Generate a new role into the workspace:
 
 ```bash
-copier copy gh:eyebrowkang/ansible-development roles/<namespace>.<name>
-# or from a local checkout of this repo:
+copier copy https://git.utlas.de/eyebrowkang/ansible-development.git roles/<namespace>.<name>
+# local scaffold-dev testing only (records a non-portable _src_path: .):
 uv run copier copy . roles/<namespace>.<name>
 ```
 

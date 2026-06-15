@@ -14,7 +14,9 @@ runner (no container), so `ansible-builder-vagrant` is optional. See `../../docs
 
 ## Tags
 
-`build-image.yml` uses `docker/build-push-action` + `docker/metadata-action`. Each push to `main` tags:
+`build-image.yml` computes tags with `docker/metadata-action`, then builds + pushes with plain
+`docker build` / `docker push` — **not** `docker/build-push-action`/buildx, whose OCI manifest this
+Forgejo registry rejects. Each push to `main` tags:
 
 - `latest` (moving)
 - `main` (the branch)
