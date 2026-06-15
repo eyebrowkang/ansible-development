@@ -1,5 +1,5 @@
-# git-cliff configuration — conventional commits -> CHANGELOG.md / release notes.
-# Sections mirror the role's release-please setup so GitHub and Forgejo roles read alike.
+# git-cliff configuration for the scaffold's own releases (push a v* tag).
+# Sections mirror the role/collection release setup so everything reads alike.
 # Docs: https://git-cliff.org
 [changelog]
 header = """
@@ -38,5 +38,5 @@ commit_parsers = [
   { message = ".*", skip = true },
 ]
 filter_commits = false
-tag_pattern = "^v[0-9]"   # anchored: only vX.Y.Z release tags
+tag_pattern = "^v[0-9]"   # anchored: only vX.Y.Z release tags (not archive/* or builder/v*)
 sort_commits = "oldest"

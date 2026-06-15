@@ -200,6 +200,6 @@ builder_registry:
 
 builder_tag:
   type: str
-  help: "Builder image tag. The runner uses force_pull:false, so PIN an immutable tag from build-image.yml (e.g. sha-ab12cd3) — never 'latest'/'main'. Replace the placeholder default with a real sha tag (edit .copier-answers.yml or run copier update)."
+  help: "Builder image tag — PIN an immutable tag (runner uses force_pull:false): prefer a versioned 'vX.Y.Z' from a 'builder/v*' image release, else a 'sha-<short>'. Never 'latest'/'main'. Replace the placeholder default."
   default: "sha-REPLACE_ME"
   when: "{{ ci_platform in ['forgejo', 'both'] }}"

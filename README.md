@@ -60,6 +60,26 @@ make lint
 
 细节见 [docs/ci-overview.md](docs/ci-overview.md)。
 
+## 发布（维护者）
+
+脚手架与 builder 镜像各自独立用 tag 发布。
+
+**脚手架版本**（`copier update` 的目标）——合并到 main 后打 SemVer tag：
+
+```bash
+git tag -a v0.1.0 -m "v0.1.0" && git push origin v0.1.0
+```
+
+`.forgejo/workflows/release.yml` 用 git-cliff 生成 release notes、建 Forgejo release、回写 `CHANGELOG.md`。非 `v` 开头的 tag（如旧的 `archive/*`）被忽略。
+
+**builder 镜像版本**（role `builder_tag` 的 pin 目标，独立 cadence）——改了 `images/builder/` 后打 `builder/v*` tag：
+
+```bash
+git tag builder/v1.0.0 && git push origin builder/v1.0.0
+```
+
+`.forgejo/workflows/release-image.yml` 构建并推送 `vX.Y.Z`（不可变）+ `sha-<short>`；日常 main push 仍由 `build-image.yml` 出 `latest`/`sha`（dev 用）。两套 tag 互不触发。
+
 ## 进一步阅读
 
 - [docs/creating-a-role.md](docs/creating-a-role.md)——copier copy / update 流程、GitHub release-please 与 Forgejo tag 发布、tasks/ 拆分约定

@@ -29,6 +29,19 @@ Forgejo registry rejects. Each push to `main` tags:
 The registry host is derived from the instance URL (`GITHUB_SERVER_URL`), not hardcoded; images push
 to `<host>/<owner>/ansible-builder[-vagrant]`.
 
+## Releasing a versioned image
+
+`build-image.yml` produces the moving `latest`/`main` + immutable `sha-<short>` on every push to
+`main` (dev). For a stable, readable tag to pin in roles, cut a **versioned release** on its own
+cadence — push a `builder/v*` git tag (independent of the scaffold's own version):
+
+```bash
+git tag builder/v1.0.0 && git push origin builder/v1.0.0
+```
+
+`release-image.yml` then builds + pushes `v1.0.0` (immutable) + `sha-<short>`. Pin `v1.0.0` in
+roles' `builder_tag`. Bump to `builder/v1.1.0` etc. when the toolchain changes.
+
 ## Forgejo settings
 
 - The workflow sets `permissions: packages: write`.

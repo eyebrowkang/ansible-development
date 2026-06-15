@@ -1,0 +1,62 @@
+---
+name: release
+# Scaffold's own release. Push a SemVer tag (e.g. v0.1.0) -> git-cliff builds the release
+# notes + CHANGELOG.md, then a Forgejo release is created via the API. The tag is also what
+# `copier update` targets as a version, so cutting a tag = publishing a template version.
+# (Builder images are released separately via release-image.yml on `builder/v*` tags.)
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0   # git-cliff needs full history + tags
+
+      - name: Install git-cliff
+        run: |
+          ver=2.13.1
+          mkdir -p /tmp/gc
+          curl -fsSL "https://github.com/orhun/git-cliff/releases/download/v${ver}/git-cliff-${ver}-x86_64-unknown-linux-musl.tar.gz" \
+            | tar -xz -C /tmp/gc --strip-components=1
+          install /tmp/gc/git-cliff /usr/local/bin/git-cliff
+
+      - name: Build release notes for this tag
+        run: git-cliff --latest --strip header -o RELEASE_NOTES.md
+
+      - name: Create the Forgejo release
+        run: |
+          jq -n --arg tag "$GITHUB_REF_NAME" --rawfile body RELEASE_NOTES.md \
+            '{tag_name: $tag, name: $tag, body: $body, draft: false, prerelease: false}' \
+          | curl -fsSL -X POST \
+              "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases" \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              --data @-
+
+      # Keep CHANGELOG.md on the default branch in sync. Delete this step if you maintain
+      # CHANGELOG.md locally or the default branch rejects direct pushes.
+      - name: Sync CHANGELOG.md on the default branch
+        run: |
+          git config --global --add safe.directory "$(pwd)"
+          default="${{ github.event.repository.default_branch }}"
+          default="${default:-main}"
+          git config user.name "forgejo-actions"
+          git config user.email "forgejo-actions@noreply.local"
+          git fetch origin "$default"
+          git checkout -B "$default" FETCH_HEAD
+          git-cliff -o CHANGELOG.md
+          git add CHANGELOG.md
+          git diff --cached --quiet || {
+            git commit -m "chore(changelog): $GITHUB_REF_NAME [skip ci]"
+            git push origin "HEAD:$default"
+          }
