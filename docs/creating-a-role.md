@@ -26,8 +26,9 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
 | `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
 | `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Dependabot + Galaxy 导入 |
+| `forgejo_release` | （仅 `ci_platform` 含 forgejo 时问，纯 forgejo 默认开）生成 Forgejo tag 驱动发布：push `v*` tag → git-cliff 出 CHANGELOG + 建 Forgejo release |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
-| `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest` |
+| `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest`；默认是占位 `sha-REPLACE_ME`，记得替换 |
 
 > **目录命名约定**：role 目录用 `<namespace>.<name>`（与 converge 里的 `role: namespace.role_name` 对应，molecule 把上级目录加入 `ANSIBLE_ROLES_PATH`）。
 
@@ -54,6 +55,8 @@ uv run copier update --trust       # 要求 role 是干净的 git 仓库
 copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合并；冲突会生成 `.rej`，手动解决即可。这正是选 copier 而非 cookiecutter 的核心价值——模板可持续回填。
 
 > `kind` 默认 `role`，所以上面的命令不必显式带 `-d kind=role`。生成 collection 见 [creating-a-collection.md](creating-a-collection.md)。
+>
+> 脚手架自身采用 semver tag（`vX.Y.Z`）发布版本，`copier update` 默认更新到最新 tag；首个版本发布前（尚无 tag）可用 `copier update --vcs-ref=HEAD` 跟最新提交。
 
 ## release 自动化（仅 GitHub）
 
@@ -67,6 +70,22 @@ copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合�
 需配置 secrets：`AUTOMATION_TOKEN`（细粒度 PAT，缺省回退 `GITHUB_TOKEN`）、`GALAXY_API_KEY`。
 
 > Dependabot 只在 github.com 跑；forgejo-only 的 role 不问这个开关、也不生成这些文件。
+
+## Forgejo tag 驱动发布（自托管）
+
+`forgejo_release`（仅 `ci_platform` 含 forgejo 时询问；纯 forgejo 默认开，`both` 默认关以免与 release-please 重复）生成自托管 role 的经典 tag 流（不发 Galaxy）：
+
+- `.forgejo/workflows/release.yml`——`on: push tags v*`，在 builder 镜像里下载 git-cliff → `git-cliff --latest` 出 release notes → 调 Forgejo API 建 release → `git-cliff` 重建 `CHANGELOG.md` 回写默认分支（`[skip ci]`）。
+- `cliff.toml`——git-cliff 配置，分组与 release-please 的 sections 对齐（feat/fix/perf/refactor/docs/test，其余隐藏）。
+- `CHANGELOG.md`——初始种子，首个 release 起由 git-cliff 重建。
+
+发布只需打 tag（用 Forgejo 自动注入的 `GITHUB_TOKEN`，**无需额外 secret**）：
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+> tag 打在默认分支上（回写 `CHANGELOG.md` 那步会切到默认分支）。若默认分支受保护不许直接 push、或你想本地手动维护 `CHANGELOG.md`，删掉 release.yml 里「Sync CHANGELOG.md」那一步即可。`both` 平台若两个开关都开会同时有两套发布，通常只用其一。
 
 ## tasks/ 拆分约定（推荐，非强制）
 

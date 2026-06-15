@@ -8,7 +8,7 @@ molecule-plugins（最新 25.8.12，2025-08）已明显落后 molecule/ansible-c
 
 ## vagrant 场景：已验证可用于 ansible-core 2.21 ✅
 
-vagrant **只能**用 `molecule-plugins[vagrant]`（没有 ansible-native 替代）。曾担心它和 docker driver 一样在 2.21 上崩，但**已在 Arch Linux + libvirt 上实测 `make test-vm` 全流程通过**（`1 scenario (1 successful)`）——vagrant 插件没有 docker 插件那个 data-tagging 问题。
+vagrant **只能**用 `molecule-plugins[vagrant]`（没有 ansible-native 替代）。曾担心它和 docker driver 一样在 2.21 上崩，但**已在 Arch Linux + libvirt 上实测 `make test-vm` 全流程通过**（`1 scenario (1 successful)`）——vagrant 插件没有 docker 插件那个 data-tagging 问题。此外脚手架自测的 `smoke-role-vagrant` job（容器化、gate 到 main/dispatch）在 CI 里持续跑这条轨。
 
 万一未来某个 ansible-core 版本打破它，应急方案：把该 role 的 `ansible-core` 临时 pin 到兼容版本，或等 molecule-plugins 更新。docker 场景不受影响（已 ansible-native）。
 
