@@ -30,7 +30,7 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 > **不可变 = 锁产物**：Dockerfile 里 base 镜像（debian / docker-cli / uv）已按 `@sha256` digest 钉死、`uv python` 钉到具体 patch，所以同一 `sha-<short>` 重建产物可复现（tag 锁配方，digest 锁产物）。刷新 digest：`docker buildx imagetools inspect <image>`。
 >
-> 脚手架**自测**（`test-template.yml`）则用仓库变量 `vars.BUILDER_REGISTRY` + `vars.BUILDER_TAG` 拉镜像（在 Forgejo 仓库/组织 Variables 里设），同样不写死。
+> 脚手架**自测 / 发布**（`test-template.yml`、`release.yml`）的镜像由各自的 `resolve-image` job 自动取最新 `builder/v*` tag —— 只有 registry 主机来自 `vars.BUILDER_REGISTRY`，发了新镜像无需手改变量（与 role pin 死版本不同，自测要跟最新工具链）。
 
 ## vagrant job：默认容器化
 

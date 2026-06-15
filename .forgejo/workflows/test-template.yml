@@ -6,10 +6,9 @@ name: test-template
 # in the builder image — this is our own trusted template code; molecule reaches the
 # host daemon via DooD.
 #
-# Builder image comes from repo/org variables (Forgejo Settings -> Variables):
-#   vars.BUILDER_REGISTRY  e.g. git.utlas.de/eyebrowkang
-#   vars.BUILDER_TAG       a pinned sha-<short> from build-image.yml (never latest)
-# so the image address + tag are not hardcoded here.
+# The builder image is resolved automatically by the resolve-image job: it picks the
+# latest `builder/v*` release tag, so there's no hardcoded image version here. Only the
+# registry host comes from a variable: vars.BUILDER_REGISTRY (e.g. git.utlas.de/eyebrowkang).
 on:
   push:
     branches: [main]
@@ -29,13 +28,32 @@ on:
   workflow_dispatch:
 
 jobs:
+  resolve-image:
+    # Resolve the newest released builder image (latest `builder/v*` tag) so every
+    # container job below uses the current immutable version — no hardcoded BUILDER_TAG.
+    runs-on: ubuntu-latest
+    outputs:
+      builder: ${{ steps.r.outputs.builder }}
+      vagrant: ${{ steps.r.outputs.vagrant }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: r
+        run: |
+          reg="${{ vars.BUILDER_REGISTRY }}"
+          tag="$(git ls-remote --tags --refs origin 'builder/v*' | sed 's@.*/builder/@@' | sort -V | tail -1)"
+          tag="${tag:-latest}"   # fallback before the first builder/v* release
+          echo "Resolved builder image tag: $tag"
+          echo "builder=$reg/ansible-builder:$tag" >> "$GITHUB_OUTPUT"
+          echo "vagrant=$reg/ansible-builder-vagrant:$tag" >> "$GITHUB_OUTPUT"
+
   lint-role:
     # Generate a role per answer combination and lint it. The matrix exercises every
     # conditional path (CI dirs, vagrant scenario, tests/, systemd image, release
     # automation) at least once — NOT the full product. role_name has no default.
+    needs: resolve-image
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.builder }}
     strategy:
       fail-fast: false
       matrix:
@@ -90,9 +108,10 @@ jobs:
     # generate a role at the PR base, then update it to HEAD and re-lint. Catches template
     # changes that break the three-way merge or the recorded _src_path. fetch-depth:0 so
     # copier can resolve both the base ref and HEAD.
+    needs: resolve-image
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.builder }}
     steps:
       - uses: actions/checkout@v5
         with:
@@ -142,9 +161,10 @@ jobs:
   lint-collection:
     # Generate a collection (both CI platforms) and lint it. Rendered under an
     # ansible_collections/<ns>/<name> path so ansible-lint stays collection-aware.
+    needs: resolve-image
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.builder }}
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
@@ -177,9 +197,10 @@ jobs:
     # it creates a privileged systemd instance on the host daemon via the runner's
     # automounted docker.sock (instance privilege comes from create.yml, not this job).
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    needs: resolve-image
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.builder }}
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
@@ -209,9 +230,10 @@ jobs:
     # image with --privileged, libvirtd started by hand, then `make test-vm`. This is the
     # self-test's coverage of the vagrant track (docs/molecule-301-workaround.md).
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    needs: resolve-image
     runs-on: [self-hosted, libvirt]
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder-vagrant:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.vagrant }}
       options: --privileged
     steps:
       - uses: actions/checkout@v5
@@ -244,9 +266,10 @@ jobs:
     # ansible-test sanity (--venv) + molecule (example role) on a generated collection.
     # Gated to main/dispatch (sanity --venv is slow; molecule needs the DooD daemon).
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    needs: resolve-image
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.builder }}
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)

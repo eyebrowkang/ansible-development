@@ -13,10 +13,26 @@ permissions:
   contents: write
 
 jobs:
+  resolve-image:
+    # Resolve the newest released builder image (latest `builder/v*` tag) — no hardcoded tag.
+    runs-on: ubuntu-latest
+    outputs:
+      builder: ${{ steps.r.outputs.builder }}
+    steps:
+      - uses: actions/checkout@v5
+      - id: r
+        run: |
+          reg="${{ vars.BUILDER_REGISTRY }}"
+          tag="$(git ls-remote --tags --refs origin 'builder/v*' | sed 's@.*/builder/@@' | sort -V | tail -1)"
+          tag="${tag:-latest}"
+          echo "Resolved builder image tag: $tag"
+          echo "builder=$reg/ansible-builder:$tag" >> "$GITHUB_OUTPUT"
+
   release:
+    needs: resolve-image
     runs-on: ubuntu-latest
     container:
-      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+      image: ${{ needs.resolve-image.outputs.builder }}
     steps:
       - uses: actions/checkout@v5
         with:
