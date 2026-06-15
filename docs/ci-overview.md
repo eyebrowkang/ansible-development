@@ -5,7 +5,7 @@
 | | runner | docker 场景 | vagrant 场景 |
 |---|---|---|---|
 | **GitHub Actions**（开源） | 公共 `ubuntu-latest` | ✓ 用 setup-uv | ✗（无可靠 KVM） |
-| **Forgejo Actions**（自托管） | 你的 runner | ✓ 用 builder 镜像 | ✓ 容器化 `[self-hosted, libvirt]` |
+| **Forgejo Actions**（自托管） | 你的 runner | ✓ 用 builder 镜像 | ✓ 容器化 `[self-hosted, kvm]` |
 
 docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 Forgejo。
 
@@ -30,11 +30,11 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 > **不可变 = 锁产物**：Dockerfile 里 base 镜像（debian / docker-cli / uv）已按 `@sha256` digest 钉死、`uv python` 钉到具体 patch，所以同一 `sha-<short>` 重建产物可复现（tag 锁配方，digest 锁产物）。刷新 digest：`docker buildx imagetools inspect <image>`。
 >
-> 脚手架**自测**（`test-template.yml`）则用仓库变量 `vars.BUILDER_REGISTRY` + `vars.BUILDER_TAG` 拉镜像（在 Forgejo 仓库/组织 Variables 里设），同样不写死。
+> 脚手架**自测 / 发布**（`test-template.yml`、`release.yml`）的镜像由各自的 `resolve-image` job 自动取最新 `builder/v*` tag —— 只有 registry 主机来自 `vars.BUILDER_REGISTRY`，发了新镜像无需手改变量（与 role pin 死版本不同，自测要跟最新工具链）。
 
 ## vagrant job：默认容器化
 
-生成的 vagrant job 默认 `runs-on: [self-hosted, libvirt]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里、`options: --privileged`（暴露 `/dev/kvm`），跑 molecule 前先手动起 `virtlogd`/`libvirtd`。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
+生成的 vagrant job 默认 `runs-on: [self-hosted, kvm]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里、`options: --privileged`（暴露 `/dev/kvm`），跑 molecule 前先手动起 `virtlogd`/`libvirtd`。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
 
 > ⚠ 容器内跑 libvirt/KVM 依赖宿主暴露 `/dev/kvm` + privileged + 嵌套虚拟化；首次在你的 runner 上请实跑 `make test-vm` 确认（网络 / `dnsmasq` 这类细节可能要调）。脚手架自测的 `smoke-role-vagrant`（gate 到 main/dispatch）用同款配置做冒烟。
 

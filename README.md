@@ -48,14 +48,14 @@ make lint
 ## 测试双轨
 
 - **docker（`molecule/default`）**：快、轻；本地、GitHub 公共 runner、Forgejo 都能跑。覆盖 80%——装包、模板、配置、幂等。
-- **vagrant（`molecule/vagrant`）**：真实 VM；覆盖内核模块、真实网络、reboot、systemd 深层。本地 + 自托管 Forgejo `[self-hosted, libvirt]`（CI 里默认容器化跑）。
+- **vagrant（`molecule/vagrant`）**：真实 VM；覆盖内核模块、真实网络、reboot、systemd 深层。本地 + 自托管 Forgejo `[self-hosted, kvm]`（CI 里默认容器化跑）。
 
 ## CI
 
 生成的 role 自带：
 
 - `.github/workflows/ci.yml`——公共 runner 上跑 lint + docker 场景；
-- `.forgejo/workflows/{lint,molecule}.yml`——用 builder 镜像跑 lint + docker；vagrant 在 `[self-hosted, libvirt]` 上**容器化**（`ansible-builder-vagrant` + `--privileged`）跑。
+- `.forgejo/workflows/{lint,molecule}.yml`——用 builder 镜像跑 lint + docker；vagrant 在 `[self-hosted, kvm]` 上**容器化**（`ansible-builder-vagrant` + `--privileged`）跑。
 - **发布**（可选）：GitHub 走 release-please（`release_automation`）；自托管 Forgejo 走 tag 驱动 + git-cliff（`forgejo_release`）。
 
 细节见 [docs/ci-overview.md](docs/ci-overview.md)。
