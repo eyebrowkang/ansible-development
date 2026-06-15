@@ -5,6 +5,11 @@ name: test-template
 # molecule (docker) + ansible-test sanity smokes. Runs on the self-hosted Forgejo runner
 # in the builder image — this is our own trusted template code; molecule reaches the
 # host daemon via DooD.
+#
+# Builder image comes from repo/org variables (Forgejo Settings -> Variables):
+#   vars.BUILDER_REGISTRY  e.g. git.utlas.de/eyebrowkang
+#   vars.BUILDER_TAG       a pinned sha-<short> from build-image.yml (never latest)
+# so the image address + tag are not hardcoded here.
 on:
   push:
     branches: [main]
@@ -30,7 +35,7 @@ jobs:
     # automation) at least once — NOT the full product. role_name has no default.
     runs-on: ubuntu-latest
     container:
-      image: git.utlas.de/eyebrowkang/ansible-builder:latest
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
     strategy:
       fail-fast: false
       matrix:
@@ -80,12 +85,66 @@ jobs:
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run bash tests/shellcheck.sh
 
+  update-role:
+    # Exercise `copier update` (the backfill that justifies copier over cookiecutter):
+    # generate a role at the PR base, then update it to HEAD and re-lint. Catches template
+    # changes that break the three-way merge or the recorded _src_path. fetch-depth:0 so
+    # copier can resolve both the base ref and HEAD.
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Pick base ref to generate from
+        id: base
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          base="${base:-$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)}"
+          echo "ref=$base" >> "$GITHUB_OUTPUT"
+      - name: Generate role at the base ref
+        run: >-
+          uv run copier copy --defaults --vcs-ref="${{ steps.base.outputs.ref }}"
+          -d role_name=testrole "${{ github.workspace }}" "${{ runner.temp }}/eyebrowkang.testrole"
+      - name: git init the generated role
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: copier update to HEAD
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        # Use the scaffold venv's copier (the role's own env has no copier); CWD stays the role.
+        run: |
+          "${{ github.workspace }}/.venv/bin/copier" update --defaults --trust --vcs-ref=HEAD
+      - name: Assert clean merge (no .rej)
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          rej="$(git ls-files --others --exclude-standard | grep '\.rej$' || true)"
+          if [ -n "$rej" ]; then echo "copier update produced conflicts:"; echo "$rej"; exit 1; fi
+          echo "no .rej — update merged cleanly"
+      - name: Commit the update (so lint collects every file via git)
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "copier update" || echo "no changes"
+      - name: Re-lint the updated role
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          uv sync
+          uv run ansible-galaxy collection install -r molecule/default/collections.yml
+          uv run yamllint .
+          uv run ansible-lint
+
   lint-collection:
     # Generate a collection (both CI platforms) and lint it. Rendered under an
     # ansible_collections/<ns>/<name> path so ansible-lint stays collection-aware.
     runs-on: ubuntu-latest
     container:
-      image: git.utlas.de/eyebrowkang/ansible-builder:latest
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
@@ -120,7 +179,7 @@ jobs:
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     container:
-      image: git.utlas.de/eyebrowkang/ansible-builder:latest
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
@@ -144,13 +203,50 @@ jobs:
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run molecule destroy
 
+  smoke-role-vagrant:
+    # Real vagrant/libvirt VM on the default-answers role. Gated to main/dispatch.
+    # Containerized exactly like the generated role's vagrant job: the vagrant builder
+    # image with --privileged, libvirtd started by hand, then `make test-vm`. This is the
+    # self-test's coverage of the vagrant track (docs/molecule-301-workaround.md).
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    runs-on: [self-hosted, libvirt]
+    container:
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder-vagrant:${{ vars.BUILDER_TAG }}
+      options: --privileged
+    steps:
+      - uses: actions/checkout@v5
+      - name: Start libvirt daemons
+        run: |
+          virtlogd -d
+          libvirtd -d
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Generate role (defaults — includes the vagrant scenario)
+        run: uv run copier copy --defaults -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
+      - name: git init the generated role
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: Install role toolchain (+ vagrant group)
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: uv sync --group vagrant
+      - name: Molecule (vagrant)
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: make test-vm
+      - name: Destroy
+        if: always()
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: uv run molecule destroy -s vagrant
+
   smoke-collection:
     # ansible-test sanity (--venv) + molecule (example role) on a generated collection.
     # Gated to main/dispatch (sanity --venv is slow; molecule needs the DooD daemon).
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-latest
     container:
-      image: git.utlas.de/eyebrowkang/ansible-builder:latest
+      image: ${{ vars.BUILDER_REGISTRY }}/ansible-builder:${{ vars.BUILDER_TAG }}
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)

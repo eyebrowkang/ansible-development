@@ -23,13 +23,21 @@ jobs:
 {% if include_vagrant %}
 
   vagrant:
-    # Host-mode runner with libvirt + KVM (mirrors the proven restic setup). If your
-    # libvirt runner is containerized instead, add `container:` with the
-    # {{ builder_registry }}/ansible-builder-vagrant:{{ builder_tag }} image — see docs/ci-overview.md.
+    # Containerized vagrant track: the job runs in the ansible-builder-vagrant image with
+    # --privileged so it can reach /dev/kvm and run libvirtd inside the container (this
+    # runner runs every job in Docker; nothing is installed on the host). The image ships
+    # uv, so there's no setup-uv step. Host-mode is the alternative — see docs/ci-overview.md.
     runs-on: [self-hosted, libvirt]
+    container:
+      image: {{ builder_registry }}/ansible-builder-vagrant:{{ builder_tag }}
+      options: --privileged
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - name: Start libvirt daemons
+        # No init system in the image; start the daemons vagrant-libvirt needs by hand.
+        run: |
+          virtlogd -d
+          libvirtd -d
       - run: uv sync --group vagrant
       - name: Molecule (vagrant)
         run: make test-vm

@@ -40,6 +40,18 @@ _message_after_copy: |
     make sanity        # ansible-test sanity
     make test          # molecule (example role)
   {% endif %}
+  {% if ci_platform in ['forgejo', 'both'] and builder_tag == 'sha-REPLACE_ME' %}
+
+  ⚠ builder_tag is still the placeholder. Set it to a real immutable tag from
+    build-image.yml (e.g. sha-ab12cd3): the runner uses force_pull:false, so
+    'latest'/'main' go stale and the placeholder won't pull.
+  {% endif %}
+  {% if forgejo_release %}
+
+  Forgejo release: push a tag to cut a release, e.g.
+    git tag v0.1.0 && git push origin v0.1.0
+  → .forgejo/workflows/release.yml runs git-cliff (CHANGELOG.md) and creates the release.
+  {% endif %}
 
 # ============================================================= what to generate ===
 
@@ -138,6 +150,12 @@ release_automation:
   help: "Add GitHub release automation (release-please + conventional PR-title check + Dependabot + Galaxy import)?"
   default: "{{ kind == 'role' and ci_platform in ['github', 'both'] }}"
 
+forgejo_release:
+  type: bool
+  when: "{{ kind == 'role' and ci_platform in ['forgejo', 'both'] }}"
+  help: "Add Forgejo tag-driven release? Push a v* tag -> git-cliff regenerates CHANGELOG.md + creates a Forgejo release. The classic tag flow for self-hosted roles (not published to Galaxy)."
+  default: "{{ kind == 'role' and ci_platform == 'forgejo' }}"
+
 # ============================================================= collection-only ===
 
 collection_name:
@@ -182,6 +200,6 @@ builder_registry:
 
 builder_tag:
   type: str
-  help: "Builder image tag. The runner uses force_pull:false, so PIN the immutable tag produced by build-image.yml (e.g. sha-ab12cd3) rather than 'latest'."
-  default: "latest"
+  help: "Builder image tag. The runner uses force_pull:false, so PIN an immutable tag from build-image.yml (e.g. sha-ab12cd3) — never 'latest'/'main'. Replace the placeholder default with a real sha tag (edit .copier-answers.yml or run copier update)."
+  default: "sha-REPLACE_ME"
   when: "{{ ci_platform in ['forgejo', 'both'] }}"
