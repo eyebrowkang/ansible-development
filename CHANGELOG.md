@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## [unreleased]
+## [0.1.0] - 2026-06-15
 
 
 ### Documentation
@@ -19,6 +19,8 @@ All notable changes to this project are documented in this file.
 ### Features
 
 - Containerize vagrant CI + Forgejo tag-release; pin builder images
+
+- Tag-driven releases for the scaffold and versioned builder images
 
 
 ### Tests
