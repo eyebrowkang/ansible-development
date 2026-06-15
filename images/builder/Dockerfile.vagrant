@@ -7,12 +7,15 @@
 FROM debian:13-slim@sha256:4e401d95de7083948053197a9c3913343cd06b706bf15eb6a0c3ccd26f436a0e
 
 ENV DEBIAN_FRONTEND=noninteractive
+# dnsmasq-base + iptables: libvirt NAT networks need them, but they're only Recommends of
+# libvirt-daemon-system, which --no-install-recommends drops — that was vagrant-libvirt's
+# "Unable to find 'dnsmasq' binary in $PATH" failure. Install them explicitly.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates curl git jq make nodejs openssh-client shellcheck \
         vagrant vagrant-libvirt \
         qemu-system-x86 qemu-utils \
-        libvirt-clients libvirt-daemon-system \
+        libvirt-clients libvirt-daemon-system dnsmasq-base iptables \
         libvirt-dev pkg-config gcc python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
