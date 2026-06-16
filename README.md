@@ -1,6 +1,6 @@
 # Ansible development
 
-个人的 Ansible 开发工具箱（meta-repo）：用 **copier 模板**生成自包含的 Ansible **role 或 collection**（`kind` 开关），用 **uv** 管理工具链，用 **molecule** 双轨测试（Docker + Vagrant/libvirt），并为 **GitHub Actions** 与自托管 **Forgejo Actions** 提供开箱即用的 CI（role 可选 release-please / Dependabot release 自动化）。
+个人的 Ansible 开发工具箱（meta-repo）：用 **copier 模板**生成自包含的 Ansible **role 或 collection**（`kind` 开关），用 **uv** 管理工具链，用 **molecule** 双轨测试（Docker + Vagrant/libvirt），并为 **GitHub Actions** 与自托管 **Forgejo Actions** 提供开箱即用的 CI、**Renovate** 依赖更新，以及可选的 release 自动化（GitHub release-please / Forgejo git-cliff；collection 走 antsibull-changelog）。
 
 > 旧的 conda 版脚手架已归档在 git tag `archive/conda-scaffold-v0`。
 
@@ -56,9 +56,10 @@ make lint
 
 - `.github/workflows/ci.yml`——公共 runner 上跑 lint + docker 场景；
 - `.forgejo/workflows/{lint,molecule}.yml`——用 builder 镜像跑 lint + docker；vagrant 在 `[self-hosted, kvm]` 上**容器化**（`ansible-builder-vagrant` + `--privileged`）跑。
-- **发布**（可选）：GitHub 走 release-please（`release_automation`）；自托管 Forgejo 走 tag 驱动 + git-cliff（`forgejo_release`）。
+- **依赖更新**（`dependency_updates`，默认开）：一套 **Renovate** 配置覆盖 uv + Actions——Forgejo 走定时 `renovate.yml`（需 `RENOVATE_TOKEN`），GitHub 用托管 Renovate App 读 `renovate.json`（取代旧的 Dependabot）。
+- **发布**（可选）：role 在 GitHub 走 release-please（`release_automation`）、Forgejo 走 git-cliff（`forgejo_release`）；collection 走 antsibull-changelog（`collection_release` 发 Galaxy / `collection_forgejo_release` 建 Forgejo release）。
 
-细节见 [docs/ci-overview.md](docs/ci-overview.md)。
+> docker / vagrant 两轨均可选（`include_docker` / `include_vagrant`，至少开一个）。细节见 [docs/ci-overview.md](docs/ci-overview.md)。
 
 ## 发布（维护者）
 

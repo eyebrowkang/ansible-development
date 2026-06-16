@@ -174,7 +174,7 @@ jobs:
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
           uv sync
-          uv run ansible-galaxy collection install -r molecule/default/collections.yml
+          make deps   # installs the right scenario's collections.yml (default else vagrant)
           uv run yamllint .
           uv run ansible-lint
 
@@ -287,7 +287,7 @@ jobs:
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: |
           uv sync
-          uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+          make deps   # installs the right scenario's collections.yml (default else vagrant)
           uv run yamllint .
           uv run ansible-lint
 

@@ -30,11 +30,9 @@ Managed with [copier](https://copier.readthedocs.io/) + [uv](https://docs.astral
 ```bash
 uv sync          # install dev toolchain
 make lint        # yamllint + ansible-lint
-make test        # molecule test — docker scenario (fast)
-{% if include_vagrant %}
-make test-vm     # molecule test — vagrant/libvirt scenario (needs KVM)
-{% endif %}
-```
+{% if include_docker %}make test        # molecule test — docker scenario (fast)
+{% endif %}{% if include_vagrant %}make test-vm     # molecule test — vagrant/libvirt scenario (needs KVM)
+{% endif %}```
 
 Pull future template improvements:
 

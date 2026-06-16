@@ -1,11 +1,13 @@
 ---
 name: release
 # Tag-driven Forgejo release (self-hosted; not published to Galaxy). Push a vX.Y.Z tag
-# and this, on the default branch: bumps galaxy.yml, folds changelogs/fragments/ into
-# CHANGELOG.md via antsibull-changelog, builds the collection tarball, creates a Forgejo
-# release with the tarball attached, and commits the bump + changelog back. Uses the
-# auto-injected GITHUB_TOKEN; no extra secret. If the default branch is protected, drop
-# the final commit step and bump + `make changelog` locally before tagging instead.
+# and this, on the default-branch tip: bumps galaxy.yml, folds changelogs/fragments/ into
+# CHANGELOG.md via antsibull-changelog, builds the tarball, commits the bump + changelog
+# back (best-effort), then creates a Forgejo release with the tarball attached. Uses the
+# auto-injected GITHUB_TOKEN; no extra secret.
+# Notes: it builds the DEFAULT-BRANCH TIP, so tag the tip. The commit-back is best-effort —
+# a protected branch or a push race won't fail the release; for a protected branch you can
+# drop the commit step and run `make changelog` + bump the version locally before tagging.
 on:
   push:
     tags:
@@ -43,6 +45,13 @@ jobs:
       - name: Build the collection
         run: uv run ansible-galaxy collection build --output-path dist
 
+      - name: Commit version bump + changelog (before creating the release)
+        run: |
+          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
+          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
+          # Best-effort: a protected default branch or a push race must not fail the release.
+          git push origin "HEAD:$DEFAULT_BRANCH" || echo "::warning::changelog not pushed (protected branch or race); commit it manually"
+
       - name: Create the Forgejo release + upload the tarball
         run: |
           tarball="$(ls dist/*.tar.gz)"
@@ -57,10 +66,4 @@ jobs:
             "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases/$rel_id/assets?name=$(basename "$tarball")" \
             -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -F "attachment=@${tarball}"
-
-      - name: Commit version bump + changelog
-        run: |
-          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
-          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
-          git push origin "HEAD:$DEFAULT_BRANCH"
 {% endraw %}

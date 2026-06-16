@@ -31,7 +31,9 @@ jobs:
           # Forgejo is its own Renovate platform (the legacy 'gitea' platform will drop
           # Forgejo support). github.* is aliased to forgejo.* on the runner.
           RENOVATE_PLATFORM: forgejo
-          RENOVATE_ENDPOINT: ${{ github.api_url }}
+          # Forgejo API base. github.server_url is aliased to the Forgejo host; the API
+          # lives at /api/v1 (same base the release workflows build from $GITHUB_SERVER_URL).
+          RENOVATE_ENDPOINT: ${{ github.server_url }}/api/v1
           RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_GITHUB_COM_TOKEN: ${{ secrets.RENOVATE_GITHUB_COM_TOKEN }}

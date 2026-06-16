@@ -48,11 +48,23 @@ _message_after_copy: |
     build-image.yml (e.g. sha-ab12cd3): the runner uses force_pull:false, so
     'latest'/'main' go stale and the placeholder won't pull.
   {% endif %}
-  {% if forgejo_release %}
+  {% if forgejo_release or collection_forgejo_release %}
 
   Forgejo release: push a tag to cut a release, e.g.
     git tag v0.1.0 && git push origin v0.1.0
-  → .forgejo/workflows/release.yml runs git-cliff (CHANGELOG.md) and creates the release.
+  → .forgejo/workflows/release.yml builds the changelog ({% if kind == 'role' %}git-cliff{% else %}antsibull-changelog{% endif %}) and creates the release.
+  {% endif %}
+  {% if collection_release %}
+
+  Galaxy release: push a v* tag → .github/workflows/release.yml publishes the collection to
+    Ansible Galaxy and cuts a GitHub release. Configure a GALAXY_API_KEY secret first.
+  {% endif %}
+  {% if dependency_updates %}
+
+  Dependency updates (Renovate):
+  {% if ci_platform in ['github', 'both'] %}    • GitHub: install the Renovate App (https://github.com/apps/renovate) so it reads renovate.json.
+  {% endif %}{% if ci_platform in ['forgejo', 'both'] %}    • Forgejo: set a RENOVATE_TOKEN secret; .forgejo/workflows/renovate.yml runs weekly.
+  {% endif %}
   {% endif %}
 
 # ============================================================= what to generate ===
@@ -96,6 +108,10 @@ min_ansible_version:
   type: str
   help: "Minimum ansible-core version (full X.Y.Z — collection meta/runtime.yml requires it). Capped at the newest version ansible-lint's meta-runtime rule accepts for requires_ansible (2.19.0); the dev/CI toolchain itself runs ansible-core 2.21.x."
   default: "2.19.0"
+  validator: >-
+    {% set _v = min_ansible_version.split('.') %}
+    {% if _v | length != 3 or not (_v[0].isdigit() and _v[1].isdigit() and _v[2].isdigit()) %}min_ansible_version must be a full X.Y.Z version with numeric components (e.g. 2.19.0).
+    {% endif %}
 
 ci_platform:
   type: str

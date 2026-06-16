@@ -1,14 +1,17 @@
 ---
 name: Release
-# Tag-driven Galaxy release. Push a vX.Y.Z tag and this, on the default branch:
-#   1. sets galaxy.yml version from the tag,
-#   2. antsibull-changelog folds changelogs/fragments/ into CHANGELOG.md,
-#   3. ansible-galaxy builds + publishes the collection to Ansible Galaxy,
-#   4. creates a GitHub release with the tarball, and
-#   5. commits the bumped version + changelog back to the default branch.
+# Tag-driven Galaxy release. Push a vX.Y.Z tag and this, on the default-branch tip:
+#   1. sets galaxy.yml version from the tag + folds changelogs/fragments/ into CHANGELOG.md,
+#   2. ansible-galaxy builds the collection,
+#   3. commits the bumped version + changelog back (best-effort — see notes),
+#   4. publishes to Ansible Galaxy and cuts a GitHub release.
 # Requires a GALAXY_API_KEY secret (https://galaxy.ansible.com -> Preferences -> API key).
-# If the default branch is protected against direct pushes, drop the final commit step
-# and bump the version + run `make changelog` locally before tagging instead.
+# Notes:
+#   - It builds the DEFAULT-BRANCH TIP, so tag the tip (the normal case: `git tag` on the
+#     branch you just merged). The commit-back runs BEFORE the irreversible publish and is
+#     best-effort: a protected branch or a race won't strand a successful publish — if the
+#     push fails, commit the bump + changelog manually. For a protected branch you can instead
+#     drop the commit step and run `make changelog` + bump the version locally before tagging.
 on:
   push:
     tags:
@@ -42,14 +45,16 @@ jobs:
           uv run antsibull-changelog release --version "${version}"
       - name: Build the collection
         run: uv run ansible-galaxy collection build --output-path dist
+      - name: Commit version bump + changelog (before the irreversible publish)
+        run: |
+          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
+          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
+          # Best-effort: a protected default branch or a push race must not strand a successful
+          # publish (the next step is irreversible). If this fails, commit the bump manually.
+          git push origin "HEAD:$DEFAULT_BRANCH" || echo "::warning::changelog not pushed (protected branch or race); commit it manually"
       - name: Publish to Ansible Galaxy
         run: uv run ansible-galaxy collection publish --api-key "${{ secrets.GALAXY_API_KEY }}" dist/*.tar.gz
       - name: Create the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz --title "$GITHUB_REF_NAME" --notes "Released $GITHUB_REF_NAME. See CHANGELOG.md."
-      - name: Commit version bump + changelog
-        run: |
-          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
-          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
-          git push origin "HEAD:$DEFAULT_BRANCH"
