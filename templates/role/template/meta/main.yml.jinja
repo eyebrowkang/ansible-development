@@ -18,5 +18,5 @@ dependencies: []
 
 collections:
 {% for c in galaxy_collections %}
-  - {{ c }}
+  - {{ c.name if c is mapping else c }}
 {% endfor %}

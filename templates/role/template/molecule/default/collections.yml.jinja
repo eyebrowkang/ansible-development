@@ -1,7 +1,16 @@
 ---
 collections:
-  # community.docker provides docker_container (create.yml) and the docker connection plugin
-  - community.docker
+  # community.docker provides docker_container (create.yml) and the docker connection plugin.
+  # Pinned to the tested major so an upstream major bump can't silently break create.yml.
+  - name: community.docker
+    version: ">=5.0.0,<6.0.0"
 {% for c in galaxy_collections %}
-  - {{ c }}
+{% if c is mapping %}
+  - name: {{ c.name }}
+{% if c.version is defined and c.version %}
+    version: "{{ c.version }}"
+{% endif %}
+{% else %}
+  - name: {{ c }}
+{% endif %}
 {% endfor %}

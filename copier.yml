@@ -126,9 +126,13 @@ role_description:
 galaxy_collections:
   type: yaml
   when: "{{ kind == 'role' }}"
-  help: "Galaxy collections this role depends on"
+  help: >-
+    Galaxy collections this role depends on. Each entry is either a bare name
+    (community.crypto) or a {name, version} map to pin a version constraint
+    (e.g. {name: community.general, version: ">=11.0.0"}).
   default:
-    - community.general
+    - name: community.general
+      version: ">=11.0.0"
 
 include_vagrant:
   type: bool

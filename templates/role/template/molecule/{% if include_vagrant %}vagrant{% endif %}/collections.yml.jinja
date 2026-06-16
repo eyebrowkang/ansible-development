@@ -1,5 +1,12 @@
 ---
 collections:
 {% for c in galaxy_collections %}
-  - {{ c }}
+{% if c is mapping %}
+  - name: {{ c.name }}
+{% if c.version is defined and c.version %}
+    version: "{{ c.version }}"
+{% endif %}
+{% else %}
+  - name: {{ c }}
+{% endif %}
 {% endfor %}
