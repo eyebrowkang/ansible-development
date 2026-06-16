@@ -83,6 +83,10 @@ jobs:
             data: -d include_docker=false
             scenario: vagrant
             shellcheck: false
+          - name: adversarial      # quotes/colons in free-text — locks the | tojson escaping invariant
+            data: "-d 'author=a:b \"c\"' -d 'role_description=a \"b\": c'"
+            scenario: default
+            shellcheck: false
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
@@ -190,6 +194,9 @@ jobs:
           - name: vagrant-only
             data: -d ci_platform=both -d include_docker=false -d include_vagrant=true
             scenario: vagrant
+          - name: adversarial      # quotes/colons in free-text — locks the | tojson escaping invariant
+            data: "-d ci_platform=both -d 'author=a:b \"c\"' -d 'collection_description=a \"b\": c'"
+            scenario: default
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
