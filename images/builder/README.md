@@ -6,12 +6,15 @@ Built and pushed by [`../../.forgejo/workflows/build-image.yml`](../../.forgejo/
 | Image | Dockerfile | Used by | Contents |
 |-------|-----------|---------|----------|
 | `ansible-builder` | `Dockerfile` | Forgejo lint + docker molecule jobs | uv + Python 3.13 + docker client + git + make + node + jq + shellcheck |
-| `ansible-builder-vagrant` | `Dockerfile.vagrant` | every role's (containerized) vagrant job + scaffold `smoke-role-vagrant` | the above + Vagrant + QEMU + libvirt + build deps |
+| `ansible-builder-vagrant` | `Dockerfile.vagrant` | every role's (containerized) vagrant job + scaffold `smoke-role-vagrant` | the above + Vagrant + QEMU + libvirt + dnsmasq/iptables + tini + build deps |
 
 `node` is included because `actions/checkout` (and other JS actions) need it in the job container.
-The generated roles' vagrant CI job now runs **containerized** (`--privileged`) in
-`ansible-builder-vagrant` by default, so this image is **required** for the vagrant track — not
-optional. Host-mode is the alternative. See `../../docs/ci-overview.md`.
+The generated roles' vagrant CI job runs **containerized** in `ansible-builder-vagrant` by
+default, so this image is **required** for the vagrant track (not optional). It bakes the
+libvirt-in-container bits: `dnsmasq-base`/`iptables`, a relaxed `/etc/libvirt/qemu.conf`
+(cgroups/namespaces/AppArmor off), and `tini` (PID-1 reaper for the qemu teardown). Privilege
+and `/dev/kvm` come from the runner config — Forgejo's `container.options` can't grant them.
+Host-mode is the alternative. See `../../docs/ci-overview.md`.
 
 ## Tags
 

@@ -25,4 +25,4 @@ test-vm:
 	uv run molecule test -s vagrant
 ```
 
-所以**用 `make test-vm` 跑 vagrant**，别直接 `molecule test -s vagrant`。CI 的 vagrant job 也调 `make test-vm`。#301 修复后，删掉这两行 export 并 `copier update` 推给所有 role 即可。
+所以**用 `make test-vm` 跑 vagrant**，别直接 `molecule test -s vagrant`。CI 的 vagrant job 也调 `make test-vm`，清理则走 `make destroy-vm`（同样导出这两个变量）。#301 修复后，删掉这两行 export 并 `copier update` 推给所有 role 即可。

@@ -80,6 +80,8 @@ git tag builder/v1.0.0 && git push origin builder/v1.0.0
 
 `.forgejo/workflows/release-image.yml` 构建并推送 `vX.Y.Z`（不可变）+ `sha-<short>`；日常 main push 仍由 `build-image.yml` 出 `latest`/`sha`（dev 用）。两套 tag 互不触发。
 
+> **约定：一个 commit 只打一个版本 tag。** 把 `builder/v*` 和脚手架 `v*` 打到同一个 commit 会让 `git describe` 选错，copier 会把 role 的 `_commit` 记成那个 builder tag（probe 就踩过，记成了 `builder/v1.0.0`）。所以镜像改动与脚手架改动**分成不同 commit**；依赖新镜像特性的脚手架版本，要在对应 `builder/v*` 发布**之后**再发（如 `v0.2.0` 的 vagrant 轨需要 `builder/v1.2.0`）。
+
 ## 进一步阅读
 
 - [docs/creating-a-role.md](docs/creating-a-role.md)——copier copy / update 流程、GitHub release-please 与 Forgejo tag 发布、tasks/ 拆分约定

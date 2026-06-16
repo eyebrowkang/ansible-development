@@ -34,8 +34,14 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 ## vagrant job：默认容器化
 
-生成的 vagrant job 默认 `runs-on: [self-hosted, kvm]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里,跑 molecule 前先手动起 `virtlogd`/`libvirtd`。⚠ **Forgejo 的 `container.options` 只认 `--volume`/`--tmpfs`/`--hostname`/`--memory`,不认 `--privileged`/`--device`**——所以 `/dev/kvm` + 特权得由 **runner 配置**给(那台 privileged DooD runner),写在 job 的 `options` 里无效。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
+生成的 vagrant job 默认 `runs-on: [self-hosted, kvm]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里（vagrant 轨需 **builder 镜像 >= v1.2.0**）。容器内跑 libvirt/KVM 所需的几样东西都已**烤进镜像**:
 
-> ⚠ 容器内跑 libvirt/KVM 依赖宿主暴露 `/dev/kvm` + privileged + 嵌套虚拟化；首次在你的 runner 上请实跑 `make test-vm` 确认（网络 / `dnsmasq` 这类细节可能要调）。脚手架自测的 `smoke-role-vagrant`（gate 到 main/dispatch）用同款配置做冒烟。
+- `dnsmasq-base` + `iptables` —— libvirt 起 NAT 网络要用;
+- 放宽的 `/etc/libvirt/qemu.conf`（`cgroup_controllers=[]` / `namespaces=[]` / `security_driver=none` / `user`=`group`=`root`）—— 容器里做不了 per-VM cgroup / mount namespace / AppArmor 隔离;
+- `tini` —— job 起 molecule 前用 `setsid tini -s -- libvirtd` 跑 libvirtd,靠 tini 的 **subreaper** 模式回收 libvirt daemonize 出去的 qemu 僵尸(否则 `vagrant destroy` 会一直卡——qemu 退出后没人 reap)。
+
+⚠ **特权/设备只能来自 runner 配置,不能写在 job 里**:Forgejo 的 `container.options` 只认 `--volume`/`--tmpfs`/`--hostname`/`--memory`,**不认 `--privileged`/`--init`/`--device`**(之前 `--init` 没生效正是因此)。所以 `/dev/kvm` + 特权必须由那台 **privileged 的 `[self-hosted, kvm]` runner**(config 级)提供。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
+
+> 脚手架自测的 `smoke-role-vagrant`（gate 到 main/dispatch）用同款配置端到端跑这条轨。
 
 **备选 host-mode**：删掉该 job 的 `container:`（及起 libvirtd 的步骤），由 runner 主机自带 vagrant/libvirt/KVM——会在宿主留下 box/VM。
