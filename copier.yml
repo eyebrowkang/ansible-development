@@ -69,6 +69,11 @@ namespace:
   type: str
   help: "Galaxy namespace / author handle"
   default: "eyebrowkang"
+  validator: >-
+    {% if not namespace %}namespace is required.
+    {% elif namespace[0] not in 'abcdefghijklmnopqrstuvwxyz' %}namespace must start with a lowercase letter.
+    {% elif namespace | reject('in', 'abcdefghijklmnopqrstuvwxyz0123456789_') | list | length > 0 %}namespace may contain only lowercase letters, digits, and underscores (Galaxy requires ^[a-z][a-z0-9_]*$).
+    {% endif %}
 
 author:
   type: str
@@ -108,9 +113,8 @@ role_name:
   placeholder: "myrole"
   validator: >-
     {% if not role_name %}role_name is required.
-    {% elif role_name != role_name.lower() %}role_name must be lowercase.
-    {% elif ' ' in role_name %}role_name must not contain spaces (use underscores).
-    {% elif role_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}role_name must start with a letter.
+    {% elif role_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}role_name must start with a lowercase letter.
+    {% elif role_name | reject('in', 'abcdefghijklmnopqrstuvwxyz0123456789_') | list | length > 0 %}role_name may contain only lowercase letters, digits, and underscores (Galaxy requires ^[a-z][a-z0-9_]*$).
     {% endif %}
 
 role_description:
@@ -165,9 +169,8 @@ collection_name:
   placeholder: "mycollection"
   validator: >-
     {% if not collection_name %}collection_name is required.
-    {% elif collection_name != collection_name.lower() %}collection_name must be lowercase.
-    {% elif ' ' in collection_name %}collection_name must not contain spaces (use underscores).
-    {% elif collection_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}collection_name must start with a letter.
+    {% elif collection_name[0] not in 'abcdefghijklmnopqrstuvwxyz' %}collection_name must start with a lowercase letter.
+    {% elif collection_name | reject('in', 'abcdefghijklmnopqrstuvwxyz0123456789_') | list | length > 0 %}collection_name may contain only lowercase letters, digits, and underscores (Galaxy requires ^[a-z][a-z0-9_]*$).
     {% endif %}
 
 collection_description:
