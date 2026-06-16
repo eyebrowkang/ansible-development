@@ -1,9 +1,10 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install lint sanity test converge destroy
+.PHONY: help install deps lint sanity test converge destroy
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
 	@echo "lint      - yamllint + ansible-lint"
+	@echo "deps      - install Galaxy collections that ansible-lint needs"
 	@echo "sanity    - ansible-test sanity (docker)"
 	@echo "test      - molecule test for the example role (docker)"
 	@echo "converge  - molecule converge (example role)"
@@ -12,7 +13,13 @@ help:
 install:
 	uv sync
 
-lint:
+# ansible-lint resolves community.docker (used by extensions/molecule/default/create.yml)
+# from the Galaxy install path, so install the scenario's collections first — the same step
+# CI runs before linting. molecule's own test sequence installs these via dependency:galaxy.
+deps:
+	uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+
+lint: deps
 	uv run yamllint .
 	uv run ansible-lint
 
