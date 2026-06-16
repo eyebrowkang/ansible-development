@@ -124,6 +124,16 @@ include_vagrant:
     {% if not include_docker and not include_vagrant %}At least one molecule scenario is required — enable include_docker and/or include_vagrant.
     {% endif %}
 
+# =============================================== shared: dependency automation ===
+
+dependency_updates:
+  type: bool
+  help: >-
+    Add Renovate dependency-update automation (uv + Actions)? Forgejo gets a scheduled
+    .forgejo/workflows/renovate.yml (needs a RENOVATE_TOKEN secret); GitHub uses the hosted
+    Renovate App reading renovate.json. Replaces the old Dependabot config.
+  default: true
+
 # =================================================================== role-only ===
 
 role_name:
@@ -152,7 +162,7 @@ galaxy_collections:
     (e.g. {name: community.general, version: ">=11.0.0"}).
   default:
     - name: community.general
-      version: ">=11.0.0"
+      version: ">=11.0.0,<12.0.0"
 
 needs_systemd:
   type: bool
@@ -169,7 +179,7 @@ shell_templates:
 release_automation:
   type: bool
   when: "{{ kind == 'role' and ci_platform in ['github', 'both'] }}"
-  help: "Add GitHub release automation (release-please + conventional PR-title check + Dependabot + Galaxy import)?"
+  help: "Add GitHub release automation (release-please + conventional PR-title check + Galaxy import)? Dependency updates are a separate question (dependency_updates)."
   default: "{{ kind == 'role' and ci_platform in ['github', 'both'] }}"
 
 forgejo_release:
@@ -202,7 +212,7 @@ collection_dependencies:
   when: "{{ kind == 'collection' }}"
   help: "Collection dependencies for galaxy.yml (a map of name: version_spec)"
   default:
-    community.general: ">=11.0.0"
+    community.general: ">=11.0.0,<12.0.0"
 
 collection_tags:
   type: yaml

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["pep621", "github-actions"],
+  "semanticCommits": "enabled",
+  "schedule": ["before 6am on monday"],
+  "lockFileMaintenance": {
+    "enabled": true
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["pep621"],
+      "semanticCommitType": "chore"
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "semanticCommitType": "ci"
+    }
+  ]
+}

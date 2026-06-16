@@ -54,6 +54,7 @@ make test        # molecule（example role）
 | `extensions/molecule/vagrant/` | vagrant+libvirt 场景（`include_vagrant` 时；与 standalone role 的 vagrant 场景对齐，靠短名解析 example role） |
 | `CHANGELOG.md` | ansible-lint `galaxy[no-changelog]` 要求 |
 | `pyproject.toml` + `Makefile` | uv 工具链 + 本地 target |
+| `renovate.json`（+ forgejo `renovate.yml`） | Renovate 依赖更新（`dependency_updates` 时，默认开；uv + Actions，与 role 同一套配置——见 [creating-a-role.md](creating-a-role.md) 的「依赖更新自动化（Renovate）」一节） |
 
 ## 两类测试
 

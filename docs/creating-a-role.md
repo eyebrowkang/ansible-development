@@ -26,8 +26,9 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `include_vagrant` | 是否生成 vagrant+libvirt 场景（VM 专属：内核模块、reboot、真实网络；role 默认开）。**与 `include_docker` 至少开一个**，否则校验报错 |
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
 | `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
-| `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Dependabot + Galaxy 导入 |
+| `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Galaxy 导入 |
 | `forgejo_release` | （仅 `ci_platform` 含 forgejo 时问，纯 forgejo 默认开）生成 Forgejo tag 驱动发布：push `v*` tag → git-cliff 出 CHANGELOG + 建 Forgejo release |
+| `dependency_updates` | 是否生成 Renovate 依赖更新自动化（uv + Actions；默认开）。Forgejo 走定时 `renovate.yml` workflow，GitHub 用托管的 Renovate App 读 `renovate.json`。取代旧的 Dependabot |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
 | `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest`；默认是占位 `sha-REPLACE_ME`，记得替换 |
 
@@ -66,11 +67,20 @@ copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合�
 - `release-please-config.json` + `.release-please-manifest.json`——[release-please](https://github.com/googleapis/release-please) 按 conventional commits 自动开 release PR、打 tag、写 CHANGELOG。
 - `.github/workflows/release.yml`——release-please + 发布后 `ansible-galaxy role import` 导入 Galaxy。
 - `.github/workflows/pr-title.yml`——校验 PR 标题为 conventional commit（squash 合并用 PR 标题作 commit message，release-please 要解析它）。
-- `.github/dependabot.yml`——每周更新 `github-actions` 与 `uv` 依赖。
 
 需配置 secrets：`AUTOMATION_TOKEN`（细粒度 PAT，缺省回退 `GITHUB_TOKEN`）、`GALAXY_API_KEY`。
 
-> Dependabot 只在 github.com 跑；forgejo-only 的 role 不问这个开关、也不生成这些文件。
+> 依赖更新已从这个 bundle 拆出，改由 `dependency_updates`（Renovate）负责，见下。forgejo-only 的 role 不问 `release_automation`、也不生成这些文件。
+
+## 依赖更新自动化（Renovate）
+
+`dependency_updates`（默认开）用 **Renovate** 统一管理 uv（`pyproject.toml` + `uv.lock`）与 Actions 依赖，**双平台一套配置**（取代旧的 Dependabot）：
+
+- `renovate.json`——共享配置：`enabledManagers` 限定 `pep621`（uv）+ `github-actions`，每周一前出 PR，`lockFileMaintenance` 刷新 `uv.lock`，commit 前缀 `chore`（uv）/`ci`（Actions）。
+- `.forgejo/workflows/renovate.yml`（`ci_platform` 含 forgejo 时）——自托管 Renovate：定时 + 手动触发，经 `renovatebot/github-action` 走 runner 的 DooD socket（同 molecule）。需配 `RENOVATE_TOKEN`（bot 用户的 Forgejo access token，repo 读写 + PR），可选 `RENOVATE_GITHUB_COM_TOKEN`（只读 github.com PAT，取 release notes 避免限流）。
+- **GitHub** 侧无 workflow：装托管的 [Renovate App](https://github.com/apps/renovate) 到仓库即读 `renovate.json`（github.com 上 Renovate 的标准用法）。
+
+> Renovate 的 uv 流程靠 `uv.lock` 存在来识别，记得 `uv sync` 后把 `uv.lock` 一并提交。依赖只有下界（如 `community.general: ">=11.0.0,<12.0.0"`）时上界限定在已测大版本，大版本升级由 Renovate 单独开 PR 评审。
 
 ## Forgejo tag 驱动发布（自托管）
 
