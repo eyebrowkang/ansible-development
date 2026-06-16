@@ -232,9 +232,11 @@ jobs:
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     needs: resolve-image
     runs-on: [self-hosted, kvm]
+    timeout-minutes: 30   # a stuck VM teardown shouldn't burn the runner for hours
     container:
       image: ${{ needs.resolve-image.outputs.vagrant }}
-      options: --privileged
+      # --init: real PID 1 (tini) reaps the qemu zombie on teardown (else destroy hangs).
+      options: --privileged --init
     steps:
       - uses: actions/checkout@v5
       - name: Start libvirt daemons

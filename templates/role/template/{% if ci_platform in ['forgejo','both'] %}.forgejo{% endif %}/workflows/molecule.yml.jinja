@@ -28,9 +28,12 @@ jobs:
     # runner runs every job in Docker; nothing is installed on the host). The image ships
     # uv, so there's no setup-uv step. Host-mode is the alternative — see docs/ci-overview.md.
     runs-on: [self-hosted, kvm]
+    timeout-minutes: 30   # a stuck VM teardown shouldn't burn the runner for hours
     container:
       image: {{ builder_registry }}/ansible-builder-vagrant:{{ builder_tag }}
-      options: --privileged
+      # --init gives the job a real PID 1 (tini) to reap the qemu zombie on teardown —
+      # without it `vagrant destroy` hangs forever waiting for the unreaped process to exit.
+      options: --privileged --init
     steps:
       - uses: actions/checkout@v4
       - name: Start libvirt daemons
