@@ -33,15 +33,20 @@ dependencies: {}
 # Keep dev/CI scaffolding out of the built collection artifact.
 build_ignore:
   - .git
+  - .gitignore
   - .github
   - .forgejo
   - .venv
   - .ansible
   - .copier-answers.yml
   - extensions
+  # roles-only collection ships nothing under tests/; it only ever holds the generated
+  # ansible-test `tests/output/` artifact. Narrow this if you add shippable test config.
+  - tests
   - pyproject.toml
   - uv.lock
   - Makefile
   - .pre-commit-config.yaml
+  - .ansible-lint
   - .yamllint.yml
   - .python-version
