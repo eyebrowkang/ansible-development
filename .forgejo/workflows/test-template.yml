@@ -193,10 +193,13 @@ jobs:
         run: uv run ansible-lint
 
   smoke-role:
-    # End-to-end docker scenario on the default-answers role. Gated to main/dispatch:
-    # it creates a privileged systemd instance on the host daemon via the runner's
+    # End-to-end docker scenario on the default-answers role. Runs on PRs too: the docker
+    # track is fast and is the core molecule path (create.yml/destroy.yml) most template
+    # edits touch, so we want it to gate merges — push-to-main and dispatch run it as well.
+    # It creates a privileged systemd instance on the host daemon via the runner's
     # automounted docker.sock (instance privilege comes from create.yml, not this job).
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    # The slower vagrant + collection smokes below stay main/dispatch-only.
+    if: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
     needs: resolve-image
     runs-on: ubuntu-latest
     container:
