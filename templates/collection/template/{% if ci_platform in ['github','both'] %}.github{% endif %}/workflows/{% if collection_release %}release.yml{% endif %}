@@ -1,0 +1,55 @@
+---
+name: Release
+# Tag-driven Galaxy release. Push a vX.Y.Z tag and this, on the default branch:
+#   1. sets galaxy.yml version from the tag,
+#   2. antsibull-changelog folds changelogs/fragments/ into CHANGELOG.md,
+#   3. ansible-galaxy builds + publishes the collection to Ansible Galaxy,
+#   4. creates a GitHub release with the tarball, and
+#   5. commits the bumped version + changelog back to the default branch.
+# Requires a GALAXY_API_KEY secret (https://galaxy.ansible.com -> Preferences -> API key).
+# If the default branch is protected against direct pushes, drop the final commit step
+# and bump the version + run `make changelog` locally before tagging instead.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history + tags for antsibull-changelog
+      - uses: astral-sh/setup-uv@v6
+      - name: Check out the default branch (release commit lands here)
+        run: |
+          default="${{ github.event.repository.default_branch }}"
+          default="${default:-main}"
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git fetch origin "$default"
+          git checkout -B "$default" FETCH_HEAD
+          echo "DEFAULT_BRANCH=$default" >> "$GITHUB_ENV"
+      - run: uv sync
+      - name: Bump galaxy.yml version + render changelog
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version:.*/version: ${version}/" galaxy.yml
+          uv run antsibull-changelog release --version "${version}"
+      - name: Build the collection
+        run: uv run ansible-galaxy collection build --output-path dist
+      - name: Publish to Ansible Galaxy
+        run: uv run ansible-galaxy collection publish --api-key "${{ secrets.GALAXY_API_KEY }}" dist/*.tar.gz
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.tar.gz --title "$GITHUB_REF_NAME" --notes "Released $GITHUB_REF_NAME. See CHANGELOG.md."
+      - name: Commit version bump + changelog
+        run: |
+          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
+          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
+          git push origin "HEAD:$DEFAULT_BRANCH"

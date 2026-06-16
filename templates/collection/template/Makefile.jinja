@@ -1,5 +1,5 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install deps lint sanity{% if include_plugins %} units{% endif %}{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}
+.PHONY: help install deps lint sanity{% if include_plugins %} units{% endif %}{% if collection_release or collection_forgejo_release %} changelog{% endif %}{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
@@ -7,6 +7,7 @@ help:
 	@echo "deps      - install Galaxy collections that ansible-lint needs"
 	@echo "sanity    - ansible-test sanity (--venv, no docker)"
 {% if include_plugins %}	@echo "units     - ansible-test units (plugin unit tests, --venv)"
+{% endif %}{% if collection_release or collection_forgejo_release %}	@echo "changelog - antsibull-changelog release (fold fragments; bump galaxy.yml first)"
 {% endif %}{% if include_docker %}	@echo "test      - molecule test for the example role (docker)"
 	@echo "converge  - molecule converge (example role, docker)"
 	@echo "destroy   - molecule destroy (example role, docker)"
@@ -38,6 +39,11 @@ sanity:
 # Plugin unit tests under tests/unit/ (--venv, no docker; runs from the collection path).
 units:
 	uv run ansible-test units --venv --color
+{% endif %}{% if collection_release or collection_forgejo_release %}
+# Fold changelogs/fragments/*.yml into changelogs/changelog.yaml + regenerate CHANGELOG.md.
+# Bump galaxy.yml's version first (or the v* tag release workflow does both in CI).
+changelog:
+	uv run antsibull-changelog release
 {% endif %}{% if include_docker %}
 # The collection-level molecule scenario converges the example role by its short name
 # (molecule.yml sets ANSIBLE_ROLES_PATH to roles/). Add more scenarios under molecule/.

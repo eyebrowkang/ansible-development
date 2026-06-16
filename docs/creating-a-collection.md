@@ -23,6 +23,8 @@ copier 会询问（collection 相关）：
 | `collection_dependencies` | galaxy.yml 的 `dependencies`（`name: version` 映射） |
 | `collection_tags` | galaxy.yml tags——**必须含一个 Galaxy 命名 tag**（`tools`/`infrastructure`/`linux`…），否则 ansible-lint 的 `galaxy[tags]` 报错 |
 | `include_plugins` | 是否脚手架示例插件（一个 filter + 一个 module，共享 `module_utils`）+ 单测，并打开 `ansible-test units`（默认关；关时 collection 保持 roles-only） |
+| `collection_release` | （仅 `ci_platform` 含 github 时问）GitHub→Galaxy 发布：push `v*` tag → antsibull-changelog 出 changelog + `ansible-galaxy collection publish` 到 Galaxy + 建 GitHub release。需 `GALAXY_API_KEY` secret |
+| `collection_forgejo_release` | （仅 `ci_platform` 含 forgejo 时问；纯 forgejo 默认开，`both` 默认关）Forgejo tag 驱动发布：push `v*` tag → antsibull-changelog 出 changelog + 建 Forgejo release 附 tarball（不发 Galaxy） |
 
 外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`builder_*`。
 
@@ -87,6 +89,18 @@ uv run copier update --trust
 - module 的两个 ansible 约定坑：**GPLv3 头**（`validate-modules` 强制，所有 ansible module 都要，跟 collection 自身 license 无关），**author 写成 `name (@handle)`**（否则 `ansible-doc`/`validate-modules` 报 author 格式错）——模板都已处理，示例插件能直接过 `make sanity` + `make units`，无需任何 `tests/sanity/ignore-*.txt`。
 - 打开后 `galaxy.yml` 的 `build_ignore` 从 `tests` 收窄到 `tests/output`：单测 + 将来你加的 sanity ignore 文件会进 Galaxy artifact，只排除 `ansible-test` 的生成输出。
 
-## 后续（本轮未做）
+## 发布自动化（antsibull-changelog）
 
-- **collection release 自动化**（bump galaxy.yml 版本 + `ansible-galaxy collection publish` + antsibull-changelog）——role 模板已有 GitHub/Forgejo release bundle，collection 版可后续比照补上。
+两个开关——`collection_release`（GitHub→Galaxy）与 `collection_forgejo_release`（Forgejo），changelog 都用 **antsibull-changelog**（fragment 驱动，不是 commit 驱动）：
+
+- `changelogs/config.yaml` + `changelogs/fragments/`——每次改动加一个 fragment（`changelogs/fragments/<名字>.yml`，顶层键是 section：`minor_changes` / `bugfixes` / `breaking_changes` / …）。
+- 发布：push `vX.Y.Z` tag → workflow 切到默认分支 → 把版本写进 `galaxy.yml` → `antsibull-changelog release` 折叠 fragments 进 `changelogs/changelog.yaml` 并重生成 `CHANGELOG.md` → `ansible-galaxy collection build`：
+  - **GitHub**（`.github/workflows/release.yml`）：`ansible-galaxy collection publish` 发到 Galaxy + 建 GitHub release（需 `GALAXY_API_KEY` secret）。
+  - **Forgejo**（`.forgejo/workflows/release.yml`，builder 镜像内）：调 Forgejo API 建 release 并附 tarball（不发 Galaxy，自托管线；用自动注入的 `GITHUB_TOKEN`，无需额外 secret）。
+- 两个 workflow 都把 bump 后的 `galaxy.yml` + changelog 回写默认分支（`[skip ci]`）；默认分支若受保护禁止直接 push，删掉回写那步、改成本地 `make changelog` + 手动 bump 后再打 tag。
+- `make changelog` = `antsibull-changelog release`（本地折叠 fragments）。`changelogs/config.yaml` 存在时，`make sanity` 会跑 `ansible-test` 的 `changelog` 测试校验 fragments 与 `changelog.yaml`。
+- `both` 平台默认只开 GitHub 那条（`collection_forgejo_release` 默认关）以免双发布——与 role 的 `release_automation`/`forgejo_release` 一致。
+
+## 后续
+
+- collection 与 role 的脚手架现已基本对齐（molecule 双场景、Renovate、release 自动化、plugins）。

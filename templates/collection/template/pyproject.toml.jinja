@@ -20,7 +20,8 @@ dev = [
 {% if include_docker %}    "docker>=7",
 {% endif %}    "ansible-lint>=26,<27",
     "yamllint>=1.35",
-]
+{% if collection_release or collection_forgejo_release %}    "antsibull-changelog>=0.31",
+{% endif %}]
 {% if include_vagrant %}
 vagrant = [
     {include-group = "dev"},

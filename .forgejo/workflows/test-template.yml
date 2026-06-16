@@ -203,6 +203,9 @@ jobs:
           - name: plugins          # include_plugins: filter+module+units + narrowed build_ignore (lint/render only here; sanity+units in smoke-collection-plugins)
             data: -d ci_platform=both -d include_plugins=true
             scenario: default
+          - name: release          # both release tracks: github (Galaxy publish) + forgejo + antsibull changelogs/ (yamllints both release.yml; changelog sanity runs in smoke-collection)
+            data: -d ci_platform=both -d collection_forgejo_release=true
+            scenario: default
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)

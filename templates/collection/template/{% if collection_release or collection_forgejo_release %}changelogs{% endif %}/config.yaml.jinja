@@ -1,0 +1,18 @@
+---
+# antsibull-changelog configuration. Per-change fragments live in changelogs/fragments/*.yml;
+# each fragment's top-level keys are sections: release_summary, minor_changes, bugfixes,
+# breaking_changes, deprecated_features, removed_features, security_fixes, major_changes,
+# known_issues, trivial. Example fragment (changelogs/fragments/my-change.yml):
+#   minor_changes:
+#     - Add the foo option to the bar role (https://.../pull/12).
+# `antsibull-changelog release` folds the fragments into changelogs/changelog.yaml and
+# regenerates CHANGELOG.md. Docs: https://ansible.readthedocs.io/projects/antsibull-changelog/
+changes_file: changelog.yaml
+changes_format: combined
+keep_fragments: false
+mention_ancestor: true
+notesdir: fragments
+output:
+  - file: CHANGELOG.md
+    format: md
+title: {{ namespace }}.{{ collection_name }}

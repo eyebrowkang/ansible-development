@@ -230,6 +230,24 @@ include_plugins:
     built artifact ships tests/ (unit tests + sanity ignores), excluding only tests/output.
   default: false
 
+collection_release:
+  type: bool
+  when: "{{ kind == 'collection' and ci_platform in ['github', 'both'] }}"
+  help: >-
+    Add GitHub -> Galaxy release automation? Push a v* tag and antsibull-changelog renders
+    the changelog from changelogs/fragments/, ansible-galaxy builds + publishes the
+    collection to Ansible Galaxy, and a GitHub release is cut. Needs a GALAXY_API_KEY secret.
+  default: "{{ kind == 'collection' and ci_platform in ['github', 'both'] }}"
+
+collection_forgejo_release:
+  type: bool
+  when: "{{ kind == 'collection' and ci_platform in ['forgejo', 'both'] }}"
+  help: >-
+    Add Forgejo tag-driven release? Push a v* tag and antsibull-changelog renders the
+    changelog, then a Forgejo release is created with the built tarball attached (not
+    published to Galaxy — the self-hosted track). Uses the auto-injected GITHUB_TOKEN.
+  default: "{{ kind == 'collection' and ci_platform == 'forgejo' }}"
+
 # ================================================= shared: Forgejo builder image ===
 
 builder_registry:
