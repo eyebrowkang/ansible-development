@@ -1,7 +1,12 @@
 ---
 collections:
-  # community.docker provides docker_container (create.yml) and the docker connection plugin
-  - community.docker
+  # community.docker provides docker_container (create.yml) and the docker connection plugin.
+  # Pinned to the tested major so an upstream major bump can't silently break create.yml.
+  - name: community.docker
+    version: ">=5.0.0,<6.0.0"
 {% for dep_name, dep_version in collection_dependencies.items() %}
-  - {{ dep_name }}
+  - name: {{ dep_name }}
+{% if dep_version %}
+    version: "{{ dep_version }}"
+{% endif %}
 {% endfor %}
