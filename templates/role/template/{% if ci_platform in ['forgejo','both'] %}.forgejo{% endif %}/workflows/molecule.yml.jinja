@@ -31,7 +31,9 @@ jobs:
     timeout-minutes: 30   # a stuck VM teardown shouldn't burn the runner for hours
     container:
       image: {{ builder_registry }}/ansible-builder-vagrant:{{ builder_tag }}
-      options: --privileged   # privilege also comes from the runner config; --init is ignored here
+      # Forgejo's container.options only honors --volume/--tmpfs/--hostname/--memory — NOT
+      # --privileged/--device. This job needs /dev/kvm + privilege, so the *runner* must be
+      # configured privileged (the same privileged DooD runner). See docs/ci-overview.md.
     steps:
       - uses: actions/checkout@v4
       - name: Start libvirt daemons

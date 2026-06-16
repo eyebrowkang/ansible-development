@@ -34,7 +34,7 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 ## vagrant job：默认容器化
 
-生成的 vagrant job 默认 `runs-on: [self-hosted, kvm]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里、`options: --privileged`（暴露 `/dev/kvm`），跑 molecule 前先手动起 `virtlogd`/`libvirtd`。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
+生成的 vagrant job 默认 `runs-on: [self-hosted, kvm]` 且**带 `container:`**——跑在 `ansible-builder-vagrant` 镜像里,跑 molecule 前先手动起 `virtlogd`/`libvirtd`。⚠ **Forgejo 的 `container.options` 只认 `--volume`/`--tmpfs`/`--hostname`/`--memory`,不认 `--privileged`/`--device`**——所以 `/dev/kvm` + 特权得由 **runner 配置**给(那台 privileged DooD runner),写在 job 的 `options` 里无效。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
 
 > ⚠ 容器内跑 libvirt/KVM 依赖宿主暴露 `/dev/kvm` + privileged + 嵌套虚拟化；首次在你的 runner 上请实跑 `make test-vm` 确认（网络 / `dnsmasq` 这类细节可能要调）。脚手架自测的 `smoke-role-vagrant`（gate 到 main/dispatch）用同款配置做冒烟。
 

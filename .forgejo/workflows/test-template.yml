@@ -235,7 +235,8 @@ jobs:
     timeout-minutes: 30   # a stuck VM teardown shouldn't burn the runner for hours
     container:
       image: ${{ needs.resolve-image.outputs.vagrant }}
-      options: --privileged   # privilege also comes from the runner config; --init is ignored here
+      # Forgejo container.options can't grant --privileged/--device; the runner itself must
+      # be configured privileged with /dev/kvm for the vagrant track.
     steps:
       - uses: actions/checkout@v5
       - name: Start libvirt daemons
