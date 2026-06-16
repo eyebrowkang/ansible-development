@@ -92,8 +92,8 @@ license:
 
 min_ansible_version:
   type: str
-  help: "Minimum ansible-core version (full X.Y.Z — collection meta/runtime.yml requires it). Default tracks the pinned dev/CI toolchain (ansible-core 2.21.x); only that line is actually tested."
-  default: "2.21.0"
+  help: "Minimum ansible-core version (full X.Y.Z — collection meta/runtime.yml requires it). Capped at the newest version ansible-lint's meta-runtime rule accepts for requires_ansible (2.19.0); the dev/CI toolchain itself runs ansible-core 2.21.x."
+  default: "2.19.0"
 
 ci_platform:
   type: str
