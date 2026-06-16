@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1
 # VM-track toolchain: uv + docker CLI + Vagrant + QEMU + libvirt. Used by the generated
-# roles' vagrant CI job, which now runs containerized (--privileged) by default.
+# roles' vagrant CI job (containerized). Ships tini (a PID-1 zombie reaper) and a qemu.conf
+# relaxed for in-container libvirt — see the RUN below and docs/ci-overview.md.
 # See docs/ci-overview.md. Tag immutably — see .forgejo/workflows/build-image.yml.
 # Bases + uv are digest-pinned so a given sha-<short> rebuilds reproducibly (tag locks
 # the recipe; digests lock the product). Refresh: docker buildx imagetools inspect <img>.
@@ -12,12 +13,24 @@ ENV DEBIAN_FRONTEND=noninteractive
 # "Unable to find 'dnsmasq' binary in $PATH" failure. Install them explicitly.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        ca-certificates curl git jq make nodejs openssh-client shellcheck \
+        ca-certificates curl git jq make nodejs openssh-client shellcheck tini \
         vagrant vagrant-libvirt \
         qemu-system-x86 qemu-utils \
         libvirt-clients libvirt-daemon-system dnsmasq-base iptables \
         libvirt-dev pkg-config gcc python3-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# libvirt + qemu inside a container can't do the host-only isolation they default to, so
+# relax it in the image (purpose-built for containerized CI): cgroup_controllers=[] avoids
+# the "/sys/fs/cgroup/machine/..." create failure, namespaces=[] skips per-VM mount
+# namespaces, security_driver=none skips AppArmor, user/group=root avoids qemu perm issues.
+RUN printf '%s\n' \
+        'security_driver = "none"' \
+        'user = "root"' \
+        'group = "root"' \
+        'cgroup_controllers = []' \
+        'namespaces = []' \
+      >> /etc/libvirt/qemu.conf
 
 COPY --from=docker:29-cli@sha256:cdfd70216347d3cbc202a64752101dd76d11f87396749c33641eb487e2e9effc /usr/local/bin/docker /usr/local/bin/docker
 COPY --from=ghcr.io/astral-sh/uv:0.11@sha256:ff07b86af50d4d9391d9daf4ff89ce427bc544f9aae87057e69a1cc0aa369946 /uv /uvx /usr/local/bin/
