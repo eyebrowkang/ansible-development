@@ -1,5 +1,5 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install lint test test-vm converge destroy{% if shell_templates %} shellcheck{% endif %}
+.PHONY: help install lint test test-vm converge destroy destroy-vm{% if shell_templates %} shellcheck{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
@@ -8,6 +8,7 @@ help:
 	@echo "test-vm   - molecule test (vagrant scenario; needs 'uv sync --group vagrant' + libvirt/KVM)"
 	@echo "converge  - molecule converge (docker)"
 	@echo "destroy   - molecule destroy (docker)"
+	@echo "destroy-vm - molecule destroy (vagrant scenario)"
 {% if shell_templates %}	@echo "shellcheck- render shell templates and shellcheck them"
 {% endif %}
 
@@ -38,3 +39,9 @@ test-vm:
 	ANSIBLE_LIBRARY="$$(uv run python -c 'import os, molecule_plugins.vagrant as m; print(os.path.join(os.path.dirname(m.__file__), "modules"))')" \
 	ANSIBLE_FILTER_PLUGINS="$$(uv run python -c 'import os, molecule as m; print(os.path.join(os.path.dirname(m.__file__), "provisioner", "ansible", "plugins", "filter"))')" \
 	uv run molecule test -s vagrant
+
+# Cleanup for the vagrant scenario — same molecule-plugins#301 env workaround as test-vm.
+destroy-vm:
+	ANSIBLE_LIBRARY="$$(uv run python -c 'import os, molecule_plugins.vagrant as m; print(os.path.join(os.path.dirname(m.__file__), "modules"))')" \
+	ANSIBLE_FILTER_PLUGINS="$$(uv run python -c 'import os, molecule as m; print(os.path.join(os.path.dirname(m.__file__), "provisioner", "ansible", "plugins", "filter"))')" \
+	uv run molecule destroy -s vagrant

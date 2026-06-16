@@ -238,7 +238,9 @@ jobs:
     steps:
       - uses: actions/checkout@v5
       - name: Start libvirt daemons
+        # Relax libvirt's host-only isolation that can't work inside a container, then start.
         run: |
+          printf '%s\n' 'security_driver = "none"' 'user = "root"' 'group = "root"' 'cgroup_controllers = []' 'namespaces = []' >> /etc/libvirt/qemu.conf
           virtlogd -d
           libvirtd -d
       - name: Install scaffold toolchain (copier)
@@ -260,7 +262,7 @@ jobs:
       - name: Destroy
         if: always()
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
-        run: uv run molecule destroy -s vagrant
+        run: make destroy-vm
 
   smoke-collection:
     # ansible-test sanity (--venv) + molecule (example role) on a generated collection.

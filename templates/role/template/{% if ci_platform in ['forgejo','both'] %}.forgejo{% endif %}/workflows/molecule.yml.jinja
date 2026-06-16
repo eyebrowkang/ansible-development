@@ -35,7 +35,10 @@ jobs:
       - uses: actions/checkout@v4
       - name: Start libvirt daemons
         # No init system in the image; start the daemons vagrant-libvirt needs by hand.
+        # First relax libvirt's host-only isolation that can't work inside a container
+        # (per-VM cgroup placement, mount namespaces, AppArmor) — see docs/ci-overview.md.
         run: |
+          printf '%s\n' 'security_driver = "none"' 'user = "root"' 'group = "root"' 'cgroup_controllers = []' 'namespaces = []' >> /etc/libvirt/qemu.conf
           virtlogd -d
           libvirtd -d
       - run: uv sync --group vagrant
@@ -43,5 +46,5 @@ jobs:
         run: make test-vm
       - name: Destroy
         if: always()
-        run: uv run molecule destroy -s vagrant
+        run: make destroy-vm   # same #301 env workaround as test-vm
 {% endif %}
