@@ -1,7 +1,7 @@
 [project]
 name = "{{ role_name }}"
 version = "0"
-description = "{{ role_description }}"
+description = {{ role_description | tojson }}
 requires-python = ">=3.12"
 dependencies = []
 

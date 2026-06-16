@@ -2,8 +2,8 @@
 galaxy_info:
   role_name: {{ role_name }}
   namespace: {{ namespace }}
-  author: {{ author }}
-  description: {{ role_description or role_name }}
+  author: {{ author | tojson }}
+  description: {{ (role_description or role_name) | tojson }}
 {% if license != 'none' %}
   license: {{ license }}
 {% endif %}
