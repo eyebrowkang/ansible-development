@@ -23,7 +23,9 @@ copier 会询问（collection 相关）：
 | `collection_dependencies` | galaxy.yml 的 `dependencies`（`name: version` 映射） |
 | `collection_tags` | galaxy.yml tags——**必须含一个 Galaxy 命名 tag**（`tools`/`infrastructure`/`linux`…），否则 ansible-lint 的 `galaxy[tags]` 报错 |
 
-外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、（forgejo 时）`builder_*`。
+外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`builder_*`。
+
+> **molecule 场景开关（`include_docker` / `include_vagrant`）**：与 role 共享。`include_docker`（默认开）生成 `extensions/molecule/default/`（docker，example role）；`include_vagrant`（collection 默认**关**）生成 `extensions/molecule/vagrant/`（vagrant+libvirt，靠短名解析 example role）。两者至少开一个，否则 copier 校验报错。
 
 > **目录命名约定（强制）**：collection 必须放在 `…/ansible_collections/<namespace>/<collection_name>/`。
 > `ansible-test sanity` 从路径（不是 galaxy.yml）推断 namespace/name；放错路径会直接报 "must be run from within a collection"。脚手架的 `collections/` 工作区天然满足这个布局。
@@ -48,14 +50,16 @@ make test        # molecule（example role）
 | `galaxy.yml` | collection 元数据（含 `repository`/`tags`——Galaxy/ansible-lint 要求，记得改成你的真实 URL） |
 | `meta/runtime.yml` | `requires_ansible`（用完整 `X.Y.Z`） |
 | `roles/example/` | 一个占位 role；按需复制成更多 role |
-| `extensions/molecule/default/` | molecule 场景（collection 的场景放这里，不是顶层 `molecule/`） |
+| `extensions/molecule/default/` | docker molecule 场景（`include_docker` 时；collection 的场景放这里，不是顶层 `molecule/`） |
+| `extensions/molecule/vagrant/` | vagrant+libvirt 场景（`include_vagrant` 时；与 standalone role 的 vagrant 场景对齐，靠短名解析 example role） |
 | `CHANGELOG.md` | ansible-lint `galaxy[no-changelog]` 要求 |
 | `pyproject.toml` + `Makefile` | uv 工具链 + 本地 target |
 
 ## 两类测试
 
 - **`make sanity`** = `ansible-test sanity --venv`。用 `--venv`（不是 `--docker`）：sanity 各测试在独立 venv 里跑，**不需 docker**，因此在 Forgejo DooD runner 上也不会踩 "兄弟容器 bind-mount 挂到宿主路径" 的坑。慢但全面，是 Galaxy 的标准门禁。
-- **`make test`** = molecule 跑 `roles/example`。场景在 collection 根的 `extensions/molecule/`，`converge.yml` 用**短名** `roles: [example]`，靠 `molecule.yml` 里的 `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` 解析——这样 molecule 的 create/destroy playbook 不会被 ansible-lint 当成 role 内容（否则 `var-naming[no-role-prefix]` 误报）。
+- **`make test`** = molecule 跑 `roles/example`（docker 场景，`include_docker` 时）。场景在 collection 根的 `extensions/molecule/`，`converge.yml` 用**短名** `roles: [example]`，靠 `molecule.yml` 里的 `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` 解析——这样 molecule 的 create/destroy playbook 不会被 ansible-lint 当成 role 内容（否则 `var-naming[no-role-prefix]` 误报）。
+- **`make test-vm`** = molecule 跑 vagrant 场景（`include_vagrant` 时；需 `uv sync --group vagrant` + libvirt/KVM）。同 standalone role 走 molecule-plugins#301 的 `ANSIBLE_LIBRARY`/`ANSIBLE_FILTER_PLUGINS` 变通，见 [molecule-301-workaround.md](molecule-301-workaround.md)。
 
 ## CI
 

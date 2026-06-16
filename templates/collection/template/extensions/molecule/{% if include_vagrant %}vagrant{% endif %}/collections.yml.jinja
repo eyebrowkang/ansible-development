@@ -1,0 +1,12 @@
+---
+# The vagrant scenario uses the libvirt driver (no community.docker needed). It only
+# needs the collection's own runtime dependencies so the example role can resolve them.
+collections:
+{% for dep_name, dep_version in collection_dependencies.items() %}
+  - name: {{ dep_name }}
+{% if dep_version %}
+    version: "{{ dep_version }}"
+{% endif %}
+{% else %}
+  []
+{% endfor %}

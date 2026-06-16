@@ -16,7 +16,7 @@ jobs:
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
       - run: uv sync
-      - run: uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+      - run: uv run ansible-galaxy collection install -r extensions/molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint
 

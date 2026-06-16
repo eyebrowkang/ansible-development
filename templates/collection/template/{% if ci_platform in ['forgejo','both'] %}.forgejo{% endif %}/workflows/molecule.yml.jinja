@@ -10,7 +10,8 @@ defaults:
     working-directory: ansible_collections/{{ namespace }}/{{ collection_name }}
 
 jobs:
-  molecule:
+{% if include_docker %}
+  docker:
     # Container job; the runner's automounted docker.sock (DooD) lets molecule create
     # the example-role instance on the host daemon. The role is resolved by short name.
     runs-on: ubuntu-latest
@@ -21,8 +22,40 @@ jobs:
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
       - run: uv sync
-      - name: Molecule (example role)
+      - name: Molecule (example role, docker)
         run: uv run molecule test
       - name: Destroy
         if: always()
         run: uv run molecule destroy
+{% endif %}
+{% if include_vagrant %}
+{% if include_docker %}
+
+{% endif %}
+  vagrant:
+    # Containerized vagrant track for the example role — same setup as the standalone
+    # role's vagrant job (privileged [self-hosted, kvm] runner, libvirtd under tini's
+    # subreaper, make test-vm). See docs/ci-overview.md + docs/molecule-301-workaround.md.
+    runs-on: [self-hosted, kvm]
+    timeout-minutes: 30   # a stuck VM teardown shouldn't burn the runner for hours
+    container:
+      image: {{ builder_registry }}/ansible-builder-vagrant:{{ builder_tag }}
+      # Forgejo's container.options can't grant --privileged/--device; the *runner* must
+      # be configured privileged with /dev/kvm (the vagrant image bakes tini + qemu.conf,
+      # needs >= v1.2.0). See docs/ci-overview.md.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ansible_collections/{{ namespace }}/{{ collection_name }}
+      - name: Start libvirt daemons
+        run: |
+          virtlogd -d
+          setsid tini -s -- libvirtd >/tmp/libvirtd.log 2>&1 &
+          for i in $(seq 30); do virsh -c qemu:///system version >/dev/null 2>&1 && break; sleep 1; done
+      - run: uv sync --group vagrant
+      - name: Molecule (example role, vagrant)
+        run: make test-vm
+      - name: Destroy
+        if: always()
+        run: make destroy-vm   # same #301 env workaround as test-vm
+{% endif %}

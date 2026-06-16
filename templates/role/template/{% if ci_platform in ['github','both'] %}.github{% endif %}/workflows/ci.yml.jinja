@@ -9,7 +9,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
       - run: uv sync
-      - run: uv run ansible-galaxy collection install -r molecule/default/collections.yml
+      - run: uv run ansible-galaxy collection install -r molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint
 {% if shell_templates %}
@@ -18,6 +18,7 @@ jobs:
           sudo apt-get update && sudo apt-get install -y shellcheck
           uv run bash tests/shellcheck.sh
 {% endif %}
+{% if include_docker %}
 
   molecule-docker:
     runs-on: ubuntu-latest
@@ -31,3 +32,4 @@ jobs:
       - name: Destroy
         if: always()
         run: uv run molecule destroy
+{% endif %}

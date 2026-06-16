@@ -22,7 +22,8 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `galaxy_collections` | 依赖的 collection |
 | `license` | meta 里记录的 SPDX id |
 | `ci_platform` | github / forgejo / both |
-| `include_vagrant` | 是否生成 vagrant 场景 |
+| `include_docker` | 是否生成 docker 场景（快；GitHub public runner 与 Forgejo 都能跑；默认开） |
+| `include_vagrant` | 是否生成 vagrant+libvirt 场景（VM 专属：内核模块、reboot、真实网络；role 默认开）。**与 `include_docker` 至少开一个**，否则校验报错 |
 | `needs_systemd` | docker 场景是否用 systemd 镜像 |
 | `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
 | `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Dependabot + Galaxy 导入 |

@@ -1,0 +1,11 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  tasks:
+    - name: Confirm the role converged (replace with real checks)
+      ansible.builtin.assert:
+        that:
+          - true
+        success_msg: "{{ namespace }}.{{ collection_name }}.example verified"
+        fail_msg: "Replace this with real verification of the role's effects"

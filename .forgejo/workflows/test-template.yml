@@ -63,17 +63,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: defaults        # forgejo CI dir + vagrant scenario + systemd image
+          - name: defaults        # forgejo CI dir + docker+vagrant scenarios + systemd image
             data: ""
+            scenario: default
             shellcheck: false
           - name: github-release  # .github CI dir + release automation bundle
             data: -d ci_platform=github
+            scenario: default
             shellcheck: false
           - name: both-shell      # both CI dirs + tests/ dir + shellcheck, release off
             data: -d ci_platform=both -d shell_templates=true -d release_automation=false
+            scenario: default
             shellcheck: true
-          - name: minimal          # no-vagrant path + non-systemd (slim) image
+          - name: minimal          # docker-only (no vagrant) + non-systemd (slim) image
             data: -d include_vagrant=false -d needs_systemd=false
+            scenario: default
+            shellcheck: false
+          - name: vagrant-only     # no docker scenario (vagrant-only); exercises include_docker=false
+            data: -d include_docker=false
+            scenario: vagrant
             shellcheck: false
     steps:
       - uses: actions/checkout@v5
@@ -96,7 +104,7 @@ jobs:
         run: uv sync
       - name: Install Galaxy collections
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
-        run: uv run ansible-galaxy collection install -r molecule/default/collections.yml
+        run: uv run ansible-galaxy collection install -r molecule/${{ matrix.scenario }}/collections.yml
       - name: yamllint
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run yamllint .
@@ -164,20 +172,32 @@ jobs:
           uv run ansible-lint
 
   lint-collection:
-    # Generate a collection (both CI platforms) and lint it. Rendered under an
+    # Generate a collection and lint it across answer variants. Rendered under an
     # ansible_collections/<ns>/<name> path so ansible-lint stays collection-aware.
+    # 'defaults' = docker-only (collection vagrant defaults off); 'vagrant-only' exercises
+    # include_docker=false + the new extensions/molecule/vagrant scenario.
     needs: resolve-image
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.resolve-image.outputs.builder }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: defaults
+            data: -d ci_platform=both
+            scenario: default
+          - name: vagrant-only
+            data: -d ci_platform=both -d include_docker=false -d include_vagrant=true
+            scenario: vagrant
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
         run: uv sync
-      - name: Generate collection
+      - name: Generate collection (${{ matrix.name }})
         run: >-
           uv run copier copy --defaults --vcs-ref=HEAD -d kind=collection -d collection_name=testcoll
-          -d ci_platform=both . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
+          ${{ matrix.data }} . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
       - name: git init the generated collection
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: |
@@ -189,7 +209,7 @@ jobs:
         run: uv sync
       - name: Install Galaxy collections
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
-        run: uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+        run: uv run ansible-galaxy collection install -r extensions/molecule/${{ matrix.scenario }}/collections.yml
       - name: yamllint
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run yamllint .

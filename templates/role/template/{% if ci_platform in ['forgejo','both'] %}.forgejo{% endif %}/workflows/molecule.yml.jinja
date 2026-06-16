@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
+{% if include_docker %}
   docker:
     # Container job; the Forgejo runner's automounted docker.sock (DooD) lets molecule
     # create the instance on the host daemon. systemd config lives in molecule.yml.
@@ -20,8 +21,11 @@ jobs:
       - name: Destroy
         if: always()
         run: uv run molecule destroy
+{% endif %}
 {% if include_vagrant %}
+{% if include_docker %}
 
+{% endif %}
   vagrant:
     # Containerized vagrant track: the job runs in the ansible-builder-vagrant image with
     # --privileged so it can reach /dev/kvm and run libvirtd inside the container (this

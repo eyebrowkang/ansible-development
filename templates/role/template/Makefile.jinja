@@ -1,14 +1,14 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install deps lint test converge destroy{% if include_vagrant %} test-vm destroy-vm{% endif %}{% if shell_templates %} shellcheck{% endif %}
+.PHONY: help install deps lint{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}{% if shell_templates %} shellcheck{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
 	@echo "lint      - yamllint + ansible-lint"
 	@echo "deps      - install Galaxy collections that ansible-lint needs"
-	@echo "test      - molecule test (docker scenario)"
+{% if include_docker %}	@echo "test      - molecule test (docker scenario)"
 	@echo "converge  - molecule converge (docker)"
 	@echo "destroy   - molecule destroy (docker)"
-{% if include_vagrant %}	@echo "test-vm    - molecule test (vagrant scenario; needs 'uv sync --group vagrant' + libvirt/KVM)"
+{% endif %}{% if include_vagrant %}	@echo "test-vm    - molecule test (vagrant scenario; needs 'uv sync --group vagrant' + libvirt/KVM)"
 	@echo "destroy-vm - molecule destroy (vagrant scenario)"
 {% endif %}{% if shell_templates %}	@echo "shellcheck - render shell templates and shellcheck them"
 {% endif %}
@@ -16,11 +16,12 @@ help:
 install:
 	uv sync
 
-# ansible-lint resolves community.docker (used by molecule/default/create.yml) from
-# the Galaxy install path, so install the scenario's collections first — the same step
-# CI runs before linting. molecule's own test sequence installs these via dependency:galaxy.
+# ansible-lint resolves the molecule scenario's collections (community.docker for the
+# docker scenario's create.yml) from the Galaxy install path, so install them first —
+# the same step CI runs before linting. molecule's own test sequence installs these via
+# dependency:galaxy.
 deps:
-	uv run ansible-galaxy collection install -r molecule/default/collections.yml
+	uv run ansible-galaxy collection install -r molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
 
 lint: deps
 	uv run yamllint .
@@ -29,7 +30,7 @@ lint: deps
 shellcheck:
 	uv run bash tests/shellcheck.sh
 {% endif %}
-
+{% if include_docker %}
 test:
 	uv run molecule test
 
@@ -38,7 +39,7 @@ converge:
 
 destroy:
 	uv run molecule destroy
-{% if include_vagrant %}
+{% endif %}{% if include_vagrant %}
 
 # molecule-plugins#301: the vagrant module/filter aren't on Ansible's default search
 # path. Compute the package paths at runtime (no hardcoded python version) and export

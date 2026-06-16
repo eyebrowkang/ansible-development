@@ -17,8 +17,8 @@ package = false
 dev = [
     "ansible-core>=2.21,<2.22",
     "molecule>=26,<27",
-    "docker>=7",
-    "ansible-lint>=26,<27",
+{% if include_docker %}    "docker>=7",
+{% endif %}    "ansible-lint>=26,<27",
     "yamllint>=1.35",
 ]
 {% if include_vagrant %}

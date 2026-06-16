@@ -29,8 +29,8 @@ _message_after_copy: |
 
     git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
     uv sync
-    make test          # docker scenario
-  {% if include_vagrant %}  make test-vm       # vagrant scenario (needs libvirt + KVM)
+  {% if include_docker %}  make test          # docker scenario
+  {% endif %}{% if include_vagrant %}  make test-vm       # vagrant scenario (needs libvirt + KVM)
   {% endif %}
   {% else %}
   Collection generated. Next steps (run inside the new collection directory):
@@ -38,7 +38,9 @@ _message_after_copy: |
     git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
     uv sync
     make sanity        # ansible-test sanity
-    make test          # molecule (example role)
+  {% if include_docker %}  make test          # molecule (example role, docker)
+  {% endif %}{% if include_vagrant %}  make test-vm       # molecule (example role, vagrant; needs libvirt + KVM)
+  {% endif %}
   {% endif %}
   {% if ci_platform in ['forgejo', 'both'] and builder_tag == 'sha-REPLACE_ME' %}
 
@@ -104,6 +106,24 @@ ci_platform:
     Both: "both"
   default: "forgejo"
 
+# ========================================= shared: molecule test scenarios ===
+# Both roles and collections ship molecule scenarios. At least one must be enabled
+# (validated on include_vagrant, the second question). Defaults preserve prior
+# behavior: roles get docker+vagrant, collections get docker only.
+
+include_docker:
+  type: bool
+  help: "Add the docker molecule scenario? (fast; runs on GitHub public runners and Forgejo)"
+  default: true
+
+include_vagrant:
+  type: bool
+  help: "Add the vagrant+libvirt molecule scenario? (VM-only needs: kernel modules, reboot, real networking)"
+  default: "{{ kind == 'role' }}"
+  validator: >-
+    {% if not include_docker and not include_vagrant %}At least one molecule scenario is required — enable include_docker and/or include_vagrant.
+    {% endif %}
+
 # =================================================================== role-only ===
 
 role_name:
@@ -133,12 +153,6 @@ galaxy_collections:
   default:
     - name: community.general
       version: ">=11.0.0"
-
-include_vagrant:
-  type: bool
-  when: "{{ kind == 'role' }}"
-  help: "Add the vagrant+libvirt molecule scenario? (VM-only needs: kernel modules, reboot, real networking)"
-  default: true
 
 needs_systemd:
   type: bool

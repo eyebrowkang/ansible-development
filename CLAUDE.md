@@ -48,12 +48,14 @@ Two template subtrees — `templates/role/template/` and `templates/collection/t
 
 ## Two-track molecule testing
 
-Generated roles ship two scenarios with a deliberate split:
+Both **roles and collections** ship up to two molecule scenarios, each independently toggle-gated and shared across both kinds — `include_docker` (default on) and `include_vagrant` (role default on, collection default off); a validator requires **≥1**. The conditional directory names are `molecule/{% if include_docker %}default{% endif %}` + `molecule/{% if include_vagrant %}vagrant{% endif %}` for roles, and `extensions/molecule/...` for collections (the collection's example role resolves by short name via `ANSIBLE_ROLES_PATH`). The deliberate split:
 
-- **`molecule/default` (docker)** — fast; runs everywhere (local, GitHub, Forgejo). It uses molecule's **built-in `default` (delegated) driver plus hand-written `create.yml`/`destroy.yml`** driving `community.docker`. This intentionally avoids `molecule-plugins[docker]`, whose `create.yml` crashes on ansible-core 2.21 (the data-tagging change in 2.19+). Don't "simplify" it back to the plugin.
-- **`molecule/vagrant`** — real VMs (kernel modules, reboot, real networking). Uses `molecule-plugins[vagrant]` (no native alternative exists).
+- **`default` (docker)** — fast; runs everywhere (local, GitHub, Forgejo). It uses molecule's **built-in `default` (delegated) driver plus hand-written `create.yml`/`destroy.yml`** driving `community.docker`. This intentionally avoids `molecule-plugins[docker]`, whose `create.yml` crashes on ansible-core 2.21 (the data-tagging change in 2.19+). Don't "simplify" it back to the plugin.
+- **`vagrant`** — real VMs (kernel modules, reboot, real networking). Uses `molecule-plugins[vagrant]` (no native alternative exists); lives in the opt-in `vagrant` dependency-group, off the default `uv sync`.
 
-**molecule-plugins#301 (vagrant):** the `vagrant` module isn't on Ansible's default search path, so a bare `molecule test -s vagrant` fails to resolve it. The role's `Makefile` `test-vm` target works around this by computing the package paths at runtime and exporting `ANSIBLE_LIBRARY` / `ANSIBLE_FILTER_PLUGINS`. Always run the vagrant track via `make test-vm`. See `docs/molecule-301-workaround.md`.
+When docker is off, the `deps`/lint steps install Galaxy collections from the vagrant scenario's `collections.yml` instead (`molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml`); GitHub CI has no vagrant job (no reliable KVM), so a vagrant-only role/collection gets only lint+sanity on GitHub.
+
+**molecule-plugins#301 (vagrant):** the `vagrant` module isn't on Ansible's default search path, so a bare `molecule test -s vagrant` fails to resolve it. The `Makefile` `test-vm` target works around this by computing the package paths at runtime and exporting `ANSIBLE_LIBRARY` / `ANSIBLE_FILTER_PLUGINS`. Always run the vagrant track via `make test-vm`. See `docs/molecule-301-workaround.md`.
 
 ## Collections (`templates/collection/template/`)
 

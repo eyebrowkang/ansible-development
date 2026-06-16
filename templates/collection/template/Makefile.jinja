@@ -1,23 +1,27 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install deps lint sanity test converge destroy
+.PHONY: help install deps lint sanity{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
 	@echo "lint      - yamllint + ansible-lint"
 	@echo "deps      - install Galaxy collections that ansible-lint needs"
 	@echo "sanity    - ansible-test sanity (--venv, no docker)"
-	@echo "test      - molecule test for the example role (docker)"
-	@echo "converge  - molecule converge (example role)"
-	@echo "destroy   - molecule destroy (example role)"
+{% if include_docker %}	@echo "test      - molecule test for the example role (docker)"
+	@echo "converge  - molecule converge (example role, docker)"
+	@echo "destroy   - molecule destroy (example role, docker)"
+{% endif %}{% if include_vagrant %}	@echo "test-vm    - molecule test (example role, vagrant; needs 'uv sync --group vagrant' + libvirt/KVM)"
+	@echo "destroy-vm - molecule destroy (example role, vagrant)"
+{% endif %}
 
 install:
 	uv sync
 
-# ansible-lint resolves community.docker (used by extensions/molecule/default/create.yml)
-# from the Galaxy install path, so install the scenario's collections first — the same step
-# CI runs before linting. molecule's own test sequence installs these via dependency:galaxy.
+# ansible-lint resolves the molecule scenario's collections (community.docker for the
+# docker scenario's create.yml) from the Galaxy install path, so install them first —
+# the same step CI runs before linting. molecule's own test sequence installs these via
+# dependency:galaxy.
 deps:
-	uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+	uv run ansible-galaxy collection install -r extensions/molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
 
 lint: deps
 	uv run yamllint .
@@ -29,7 +33,7 @@ lint: deps
 # where --docker's sibling-container bind mounts would miss the checked-out collection).
 sanity:
 	uv run ansible-test sanity --venv --color
-
+{% if include_docker %}
 # The collection-level molecule scenario converges the example role by its short name
 # (molecule.yml sets ANSIBLE_ROLES_PATH to roles/). Add more scenarios under molecule/.
 test:
@@ -40,3 +44,18 @@ converge:
 
 destroy:
 	uv run molecule destroy
+{% endif %}{% if include_vagrant %}
+# molecule-plugins#301: the vagrant module/filter aren't on Ansible's default search
+# path. Compute the package paths at runtime (no hardcoded python version) and export
+# them so molecule can find the vagrant module. See docs/molecule-301-workaround.md
+test-vm:
+	ANSIBLE_LIBRARY="$$(uv run python -c 'import os, molecule_plugins.vagrant as m; print(os.path.join(os.path.dirname(m.__file__), "modules"))')" \
+	ANSIBLE_FILTER_PLUGINS="$$(uv run python -c 'import os, molecule as m; print(os.path.join(os.path.dirname(m.__file__), "provisioner", "ansible", "plugins", "filter"))')" \
+	uv run molecule test -s vagrant
+
+# Cleanup for the vagrant scenario — same molecule-plugins#301 env workaround as test-vm.
+destroy-vm:
+	ANSIBLE_LIBRARY="$$(uv run python -c 'import os, molecule_plugins.vagrant as m; print(os.path.join(os.path.dirname(m.__file__), "modules"))')" \
+	ANSIBLE_FILTER_PLUGINS="$$(uv run python -c 'import os, molecule as m; print(os.path.join(os.path.dirname(m.__file__), "provisioner", "ansible", "plugins", "filter"))')" \
+	uv run molecule destroy -s vagrant
+{% endif %}
