@@ -9,7 +9,7 @@ uv sync                       # 一次性：装好 copier
 copier copy https://git.utlas.de/eyebrowkang/ansible-development.git roles/<namespace>.<name>
 ```
 
-> 仅做脚手架本地调试时可用 `uv run copier copy . <dest>`，但它把 `_src_path` 记成 `.`（不可移植）——
+> 仅做脚手架本地调试时可用 `uv run copier copy --vcs-ref=HEAD . <dest>`（`--vcs-ref=HEAD` 才生成当前提交——copier 对本地 git 仓库默认用最新 tag，否则会静默测到上个已发布版本），但它把 `_src_path` 记成 `.`（不可移植）——
 > 进了 role 目录后 `copier update` 会失效。正式 role 别用这种；要用本地源就给**绝对路径**。
 
 copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：

@@ -9,6 +9,11 @@ name: test-template
 # The builder image is resolved automatically by the resolve-image job: it picks the
 # latest `builder/v*` release tag, so there's no hardcoded image version here. Only the
 # registry host comes from a variable: vars.BUILDER_REGISTRY (e.g. git.utlas.de/eyebrowkang).
+#
+# Every copier-copy step below passes --vcs-ref=HEAD so the self-test generates from the
+# CURRENT commit. Copier's default when copying a local git repo is the latest *tag*, so on
+# a tagged checkout (or once tags are fetched) a bare `copier copy .` would silently test the
+# last released template instead of the changes under review.
 on:
   push:
     branches: [main]
@@ -76,7 +81,7 @@ jobs:
         run: uv sync
       - name: Generate role (${{ matrix.name }})
         run: >-
-          uv run copier copy --defaults -d role_name=testrole ${{ matrix.data }}
+          uv run copier copy --defaults --vcs-ref=HEAD -d role_name=testrole ${{ matrix.data }}
           . "${{ runner.temp }}/eyebrowkang.testrole"
       # REQUIRED before molecule/ansible-lint: the role must be its own git repo or
       # ansible-compat's git file collection fails with "glob failed".
@@ -171,7 +176,7 @@ jobs:
         run: uv sync
       - name: Generate collection
         run: >-
-          uv run copier copy --defaults -d kind=collection -d collection_name=testcoll
+          uv run copier copy --defaults --vcs-ref=HEAD -d kind=collection -d collection_name=testcoll
           -d ci_platform=both . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
       - name: git init the generated collection
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
@@ -209,7 +214,7 @@ jobs:
       - name: Install scaffold toolchain (copier)
         run: uv sync
       - name: Generate role (defaults)
-        run: uv run copier copy --defaults -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
+        run: uv run copier copy --defaults --vcs-ref=HEAD -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
       - name: git init the generated role
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
@@ -252,7 +257,7 @@ jobs:
       - name: Install scaffold toolchain (copier)
         run: uv sync
       - name: Generate role (defaults — includes the vagrant scenario)
-        run: uv run copier copy --defaults -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
+        run: uv run copier copy --defaults --vcs-ref=HEAD -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
       - name: git init the generated role
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
@@ -284,7 +289,7 @@ jobs:
         run: uv sync
       - name: Generate collection
         run: >-
-          uv run copier copy --defaults -d kind=collection -d collection_name=testcoll
+          uv run copier copy --defaults --vcs-ref=HEAD -d kind=collection -d collection_name=testcoll
           . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
       - name: git init the generated collection
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
