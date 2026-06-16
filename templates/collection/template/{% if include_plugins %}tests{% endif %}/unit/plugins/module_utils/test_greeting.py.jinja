@@ -1,0 +1,8 @@
+{% if license != 'none' %}# SPDX-License-Identifier: {{ license }}
+{% endif %}from __future__ import annotations
+
+from ansible_collections.{{ namespace }}.{{ collection_name }}.plugins.module_utils.greeting import greet
+
+
+def test_greet():
+    assert greet("world") == "Hello, world!"

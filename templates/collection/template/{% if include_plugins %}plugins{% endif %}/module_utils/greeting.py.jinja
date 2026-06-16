@@ -1,0 +1,13 @@
+{% if license != 'none' %}# SPDX-License-Identifier: {{ license }}
+{% endif %}# Copyright (c) {{ author }}
+from __future__ import annotations
+
+
+def greet(name):
+    """Return a greeting for ``name``.
+
+    Shared helper for the collection's plugins and modules. Unit-tested directly
+    in tests/unit/plugins/module_utils/ — the idiomatic way to cover module logic
+    without spinning up a full module run.
+    """
+    return f"Hello, {name}!"

@@ -1,0 +1,41 @@
+{% if license != 'none' %}# SPDX-License-Identifier: {{ license }}
+{% endif %}# Copyright (c) {{ author }}
+from __future__ import annotations
+
+DOCUMENTATION = r"""
+name: to_upper
+short_description: Return the uppercase form of a string
+description:
+  - Example filter plugin. Returns the uppercase form of the input string.
+  - Replace it with the collection's real filter(s).
+options:
+  _input:
+    description: The string to uppercase.
+    type: str
+    required: true
+author:
+  - {{ (author ~ ' (@' ~ namespace ~ ')') | tojson }}
+"""
+
+EXAMPLES = r"""
+- name: Uppercase a value
+  ansible.builtin.debug:
+    msg: "{{ '{{' }} 'hello' | {{ namespace }}.{{ collection_name }}.to_upper {{ '}}' }}"
+"""
+
+RETURN = r"""
+_value:
+  description: The uppercased string.
+  type: str
+"""
+
+
+def to_upper(value):
+    return str(value).upper()
+
+
+class FilterModule:
+    """Example filters for the {{ namespace }}.{{ collection_name }} collection."""
+
+    def filters(self):
+        return {"to_upper": to_upper}

@@ -1,0 +1,53 @@
+#!/usr/bin/python
+# Copyright (c) {{ author }}
+# GNU General Public License v3.0+ (see LICENSE or https://www.gnu.org/licenses/gpl-3.0.txt)
+# Ansible modules are conventionally GPLv3 (ansible-test validate-modules enforces it),
+# independent of the collection's own license; adjust if your real module differs.
+from __future__ import annotations
+
+DOCUMENTATION = r"""
+module: example_fact
+short_description: Return a sample greeting
+description:
+  - Example module. Returns a greeting for the given name.
+  - Replace it with the collection's real module(s).
+options:
+  name:
+    description: The name to greet.
+    type: str
+    required: true
+author:
+  - {{ (author ~ ' (@' ~ namespace ~ ')') | tojson }}
+"""
+
+EXAMPLES = r"""
+- name: Greet the world
+  {{ namespace }}.{{ collection_name }}.example_fact:
+    name: world
+  register: result
+"""
+
+RETURN = r"""
+greeting:
+  description: The greeting message.
+  type: str
+  returned: always
+  sample: "Hello, world!"
+"""
+
+from ansible.module_utils.basic import AnsibleModule
+from ansible_collections.{{ namespace }}.{{ collection_name }}.plugins.module_utils.greeting import greet
+
+
+def main():
+    module = AnsibleModule(
+        argument_spec=dict(
+            name=dict(type="str", required=True),
+        ),
+        supports_check_mode=True,
+    )
+    module.exit_json(changed=False, greeting=greet(module.params["name"]))
+
+
+if __name__ == "__main__":
+    main()

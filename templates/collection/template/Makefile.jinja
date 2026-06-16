@@ -1,12 +1,13 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install deps lint sanity{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}
+.PHONY: help install deps lint sanity{% if include_plugins %} units{% endif %}{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
 	@echo "lint      - yamllint + ansible-lint"
 	@echo "deps      - install Galaxy collections that ansible-lint needs"
 	@echo "sanity    - ansible-test sanity (--venv, no docker)"
-{% if include_docker %}	@echo "test      - molecule test for the example role (docker)"
+{% if include_plugins %}	@echo "units     - ansible-test units (plugin unit tests, --venv)"
+{% endif %}{% if include_docker %}	@echo "test      - molecule test for the example role (docker)"
 	@echo "converge  - molecule converge (example role, docker)"
 	@echo "destroy   - molecule destroy (example role, docker)"
 {% endif %}{% if include_vagrant %}	@echo "test-vm    - molecule test (example role, vagrant; needs 'uv sync --group vagrant' + libvirt/KVM)"
@@ -33,7 +34,11 @@ lint: deps
 # where --docker's sibling-container bind mounts would miss the checked-out collection).
 sanity:
 	uv run ansible-test sanity --venv --color
-{% if include_docker %}
+{% if include_plugins %}
+# Plugin unit tests under tests/unit/ (--venv, no docker; runs from the collection path).
+units:
+	uv run ansible-test units --venv --color
+{% endif %}{% if include_docker %}
 # The collection-level molecule scenario converges the example role by its short name
 # (molecule.yml sets ANSIBLE_ROLES_PATH to roles/). Add more scenarios under molecule/.
 test:

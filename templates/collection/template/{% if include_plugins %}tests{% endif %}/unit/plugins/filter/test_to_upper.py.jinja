@@ -1,0 +1,8 @@
+{% if license != 'none' %}# SPDX-License-Identifier: {{ license }}
+{% endif %}from __future__ import annotations
+
+from ansible_collections.{{ namespace }}.{{ collection_name }}.plugins.filter.to_upper import to_upper
+
+
+def test_to_upper():
+    assert to_upper("hello") == "HELLO"

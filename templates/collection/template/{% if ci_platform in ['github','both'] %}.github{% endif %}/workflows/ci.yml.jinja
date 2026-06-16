@@ -31,6 +31,19 @@ jobs:
       - run: uv sync
       - name: ansible-test sanity
         run: uv run ansible-test sanity --venv --color
+{% if include_plugins %}
+
+  units:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ansible_collections/{{ namespace }}/{{ collection_name }}
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - name: ansible-test units
+        run: uv run ansible-test units --venv --color
+{% endif %}
 {% if include_docker %}
 
   molecule:

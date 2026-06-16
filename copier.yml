@@ -221,6 +221,15 @@ collection_tags:
   default:
     - tools
 
+include_plugins:
+  type: bool
+  when: "{{ kind == 'collection' }}"
+  help: >-
+    Scaffold example plugins (a filter + a module sharing module_utils) with unit tests,
+    and enable `ansible-test units`? Off keeps the collection roles-only. When on, the
+    built artifact ships tests/ (unit tests + sanity ignores), excluding only tests/output.
+  default: false
+
 # ================================================= shared: Forgejo builder image ===
 
 builder_registry:

@@ -59,12 +59,13 @@ When docker is off, the `deps`/lint steps install Galaxy collections from the va
 
 ## Collections (`templates/collection/template/`)
 
-Roles-only collections (matching the user's `bootstrap` collection). Key differences from roles:
+Roles-only by default (matching the user's `bootstrap` collection), optionally with example plugins via `include_plugins`. Key differences from roles:
 
 - **Generate into `collections/ansible_collections/<ns>/<name>/`** — `ansible-test` derives namespace/name from the path, not `galaxy.yml`; a wrong path fails sanity outright. CI checks out under that path (`actions/checkout` `path:`).
 - **`make sanity` = `ansible-test sanity --venv`** (not `--docker`): `--docker` bind-mounts into a sibling container, which under the Forgejo DooD runner misses the checked-out collection. `--venv` needs no docker.
 - **molecule lives at `extensions/molecule/`** (molecule's collection location), not inside `roles/example/` — else its `create.yml` vars trip ansible-lint's `var-naming[no-role-prefix]`. The example role resolves by short name via `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` set in `molecule.yml`.
 - production `ansible-lint` requires `galaxy.yml` to carry `repository` + a Galaxy namespace tag, a `CHANGELOG.md`, and `requires_ansible` as full `X.Y.Z` — the template ships all three.
+- **`include_plugins`** (default off) scaffolds an example `filter` + `module` sharing `plugins/module_utils/`, with `tests/unit/` and `ansible-test units` wired into CI + a `units` Make target. Two `validate-modules` gotchas the template already handles so the examples pass `sanity` with **zero ignore files**: modules need the **GPLv3 header** (enforced regardless of the collection's own license) and `author` in `Name (@handle)` form. Turning it on narrows `galaxy.yml` `build_ignore` from `tests` → `tests/output` so unit tests + any future sanity-ignore files ship in the Galaxy artifact. The self-test covers it via a `lint-collection` `plugins` variant (push/PR) + a `smoke-collection-plugins` job (sanity + units, main/dispatch).
 
 See `docs/creating-a-collection.md`.
 

@@ -200,6 +200,9 @@ jobs:
           - name: adversarial      # quotes/colons in free-text — locks the | tojson escaping invariant
             data: "-d ci_platform=both -d 'author=a:b \"c\"' -d 'collection_description=a \"b\": c'"
             scenario: default
+          - name: plugins          # include_plugins: filter+module+units + narrowed build_ignore (lint/render only here; sanity+units in smoke-collection-plugins)
+            data: -d ci_platform=both -d include_plugins=true
+            scenario: default
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
@@ -398,3 +401,36 @@ jobs:
         if: always()
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run molecule destroy
+
+  smoke-collection-plugins:
+    # sanity + units on a plugins collection (include_plugins=true): exercises the example
+    # filter+module+module_utils, ansible-test units, and the sanity superset the roles-only
+    # smoke-collection doesn't reach (validate-modules, ansible-doc). Gated to main/dispatch.
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    needs: resolve-image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.resolve-image.outputs.builder }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Generate collection (with plugins)
+        run: >-
+          uv run copier copy --defaults --vcs-ref=HEAD -d kind=collection -d collection_name=testcoll
+          -d include_plugins=true . "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
+      - name: git init the generated collection
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: Install collection toolchain
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv sync
+      - name: ansible-test sanity
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run ansible-test sanity --venv --color
+      - name: ansible-test units
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: uv run ansible-test units --venv --color

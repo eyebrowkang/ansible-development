@@ -22,6 +22,7 @@ copier 会询问（collection 相关）：
 | `collection_description` | 一行描述 |
 | `collection_dependencies` | galaxy.yml 的 `dependencies`（`name: version` 映射） |
 | `collection_tags` | galaxy.yml tags——**必须含一个 Galaxy 命名 tag**（`tools`/`infrastructure`/`linux`…），否则 ansible-lint 的 `galaxy[tags]` 报错 |
+| `include_plugins` | 是否脚手架示例插件（一个 filter + 一个 module，共享 `module_utils`）+ 单测，并打开 `ansible-test units`（默认关；关时 collection 保持 roles-only） |
 
 外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`builder_*`。
 
@@ -55,12 +56,15 @@ make test        # molecule（example role）
 | `CHANGELOG.md` | ansible-lint `galaxy[no-changelog]` 要求 |
 | `pyproject.toml` + `Makefile` | uv 工具链 + 本地 target |
 | `renovate.json`（+ forgejo `renovate.yml`） | Renovate 依赖更新（`dependency_updates` 时，默认开；uv + Actions，与 role 同一套配置——见 [creating-a-role.md](creating-a-role.md) 的「依赖更新自动化（Renovate）」一节） |
+| `plugins/`（`include_plugins` 时） | 示例 filter（`filter/to_upper.py`）+ module（`modules/example_fact.py`）+ 共享 `module_utils/greeting.py`。module 带 GPLv3 头（ansible 约定，`validate-modules` 强制，与 collection 自身 license 无关），author 写成 `name (@handle)` 以过 doc 校验 |
+| `tests/unit/`（`include_plugins` 时） | filter 与 module_utils 的单测，`ansible-test units` 跑；`galaxy.yml` 的 `build_ignore` 同时从 `tests` 收窄到 `tests/output`，让单测 + sanity ignore 进 Galaxy artifact |
 
 ## 两类测试
 
 - **`make sanity`** = `ansible-test sanity --venv`。用 `--venv`（不是 `--docker`）：sanity 各测试在独立 venv 里跑，**不需 docker**，因此在 Forgejo DooD runner 上也不会踩 "兄弟容器 bind-mount 挂到宿主路径" 的坑。慢但全面，是 Galaxy 的标准门禁。
 - **`make test`** = molecule 跑 `roles/example`（docker 场景，`include_docker` 时）。场景在 collection 根的 `extensions/molecule/`，`converge.yml` 用**短名** `roles: [example]`，靠 `molecule.yml` 里的 `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` 解析——这样 molecule 的 create/destroy playbook 不会被 ansible-lint 当成 role 内容（否则 `var-naming[no-role-prefix]` 误报）。
 - **`make test-vm`** = molecule 跑 vagrant 场景（`include_vagrant` 时；需 `uv sync --group vagrant` + libvirt/KVM）。同 standalone role 走 molecule-plugins#301 的 `ANSIBLE_LIBRARY`/`ANSIBLE_FILTER_PLUGINS` 变通，见 [molecule-301-workaround.md](molecule-301-workaround.md)。
+- **`make units`** = `ansible-test units --venv`（仅 `include_plugins` 时生成）。跑 `tests/unit/` 下 filter 与 module_utils 的单测，无需 docker。CI 里 forgejo `lint.yml` / github `ci.yml` 都有对应 `units` job，脚手架自测的 `smoke-collection-plugins` 还会连 sanity 一起跑。
 
 ## CI
 
@@ -74,7 +78,15 @@ cd collections/ansible_collections/<namespace>/<name>
 uv run copier update --trust
 ```
 
+## 插件（plugins）
+
+`include_plugins`（默认关）脚手架一组可直接替换的示例插件 + 单测，并把 `ansible-test units` 接进 CI：
+
+- `plugins/filter/to_upper.py`——示例 filter；`plugins/modules/example_fact.py`——示例 module；二者的逻辑都收在 `plugins/module_utils/greeting.py`（共享 helper，便于单测）。
+- `tests/unit/plugins/`——`filter` 与 `module_utils` 的单测，导入用全限定路径 `ansible_collections.<ns>.<name>.plugins.…`，`ansible-test units --venv` 跑（`make units`）。
+- module 的两个 ansible 约定坑：**GPLv3 头**（`validate-modules` 强制，所有 ansible module 都要，跟 collection 自身 license 无关），**author 写成 `name (@handle)`**（否则 `ansible-doc`/`validate-modules` 报 author 格式错）——模板都已处理，示例插件能直接过 `make sanity` + `make units`，无需任何 `tests/sanity/ignore-*.txt`。
+- 打开后 `galaxy.yml` 的 `build_ignore` 从 `tests` 收窄到 `tests/output`：单测 + 将来你加的 sanity ignore 文件会进 Galaxy artifact，只排除 `ansible-test` 的生成输出。
+
 ## 后续（本轮未做）
 
-- **collection release 自动化**（release-please 改 galaxy.yml 版本 + `ansible-galaxy collection publish` + antsibull-changelog）——role 模板已有 GitHub release bundle，collection 版可后续比照补上。
-- **plugins**：当前模板是 roles-only（对齐你现有的 `bootstrap`）。要写模块/filter 时手动加 `plugins/`，并打开 `ansible-test units`。
+- **collection release 自动化**（bump galaxy.yml 版本 + `ansible-galaxy collection publish` + antsibull-changelog）——role 模板已有 GitHub/Forgejo release bundle，collection 版可后续比照补上。
