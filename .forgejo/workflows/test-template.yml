@@ -197,6 +197,61 @@ jobs:
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run ansible-lint
 
+  update-collection:
+    # Same as update-role, for collections: generate a collection at the PR base, update it to
+    # HEAD, assert a clean three-way merge (no .rej), and re-lint. Covers the copier-update
+    # path that lint-collection alone doesn't. fetch-depth:0 so copier can resolve base + HEAD.
+    needs: resolve-image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.resolve-image.outputs.builder }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Pick base ref to generate from
+        id: base
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          base="${base:-$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)}"
+          echo "ref=$base" >> "$GITHUB_OUTPUT"
+      - name: Generate collection at the base ref
+        run: >-
+          uv run copier copy --defaults --vcs-ref="${{ steps.base.outputs.ref }}"
+          -d kind=collection -d collection_name=testcoll -d ci_platform=both
+          "${{ github.workspace }}" "${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll"
+      - name: git init the generated collection
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: copier update to HEAD
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        # Use the scaffold venv's copier (the collection's own env has no copier); CWD stays the collection.
+        run: |
+          "${{ github.workspace }}/.venv/bin/copier" update --defaults --trust --vcs-ref=HEAD
+      - name: Assert clean merge (no .rej)
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          rej="$(git ls-files --others --exclude-standard | grep '\.rej$' || true)"
+          if [ -n "$rej" ]; then echo "copier update produced conflicts:"; echo "$rej"; exit 1; fi
+          echo "no .rej — update merged cleanly"
+      - name: Commit the update (so lint collects every file via git)
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "copier update" || echo "no changes"
+      - name: Re-lint the updated collection
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          uv sync
+          uv run ansible-galaxy collection install -r extensions/molecule/default/collections.yml
+          uv run yamllint .
+          uv run ansible-lint
+
   smoke-role:
     # End-to-end docker scenario on the default-answers role. Runs on PRs too: the docker
     # track is fast and is the core molecule path (create.yml/destroy.yml) most template
