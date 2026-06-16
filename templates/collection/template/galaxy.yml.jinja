@@ -4,8 +4,8 @@ name: {{ collection_name }}
 version: 0.1.0
 readme: README.md
 authors:
-  - {{ author }}
-description: {{ collection_description or collection_name }}
+  - {{ author | tojson }}
+description: {{ (collection_description or collection_name) | tojson }}
 {% if license != 'none' %}
 license:
   - {{ license }}

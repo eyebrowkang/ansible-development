@@ -1,7 +1,7 @@
 [project]
 name = "{{ namespace }}-{{ collection_name }}"
 version = "0"
-description = "{{ collection_description }}"
+description = {{ collection_description | tojson }}
 requires-python = ">=3.12"
 dependencies = []
 

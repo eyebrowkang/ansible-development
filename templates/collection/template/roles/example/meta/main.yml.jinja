@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   role_name: example
-  author: {{ author }}
+  author: {{ author | tojson }}
   description: Example role in the {{ namespace }}.{{ collection_name }} collection
 {% if license != 'none' %}
   license: {{ license }}
