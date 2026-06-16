@@ -437,3 +437,45 @@ jobs:
       - name: ansible-test units
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run ansible-test units --venv --color
+
+  smoke-role-floor:
+    # R6: prove the generated role actually runs on its DECLARED minimum ansible-core
+    # (meta/main.yml min_ansible_version), not just the 2.21 dev toolchain it's pinned to.
+    # Build a separate venv pinned to that floor and run the full docker molecule sequence —
+    # catches a role that uses a feature newer than the floor it claims. Gated to main/dispatch
+    # (an extra toolchain install + a molecule run). The docker scenario is the same create.yml
+    # the role+collection share, so this covers the floor for both.
+    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
+    needs: resolve-image
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ needs.resolve-image.outputs.builder }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Install scaffold toolchain (copier)
+        run: uv sync
+      - name: Generate role (defaults)
+        run: uv run copier copy --defaults --vcs-ref=HEAD -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
+      - name: git init the generated role
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          git init -q
+          git add -A
+          git -c user.email=ci@local -c user.name=ci commit -q -m "init from template"
+      - name: Build a venv pinned to the declared floor + run molecule
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          min="$(grep min_ansible_version meta/main.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+          echo "Declared floor: ansible-core==${min}"
+          uv venv .venv-floor
+          uv pip install -p .venv-floor "ansible-core==${min}" "molecule>=26,<27" "docker>=7"
+          # molecule shells out to ansible-config/ansible-galaxy, so the floor venv must be on PATH.
+          export PATH="$PWD/.venv-floor/bin:$PATH"
+          ansible --version | head -1
+          molecule test
+      - name: Destroy
+        if: always()
+        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
+        run: |
+          export PATH="$PWD/.venv-floor/bin:$PATH"
+          molecule destroy || true
