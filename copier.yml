@@ -92,8 +92,8 @@ license:
 
 min_ansible_version:
   type: str
-  help: "Minimum ansible-core version (use full X.Y.Z — collection meta/runtime.yml requires it)"
-  default: "2.16.0"
+  help: "Minimum ansible-core version (full X.Y.Z — collection meta/runtime.yml requires it). Default tracks the pinned dev/CI toolchain (ansible-core 2.21.x); only that line is actually tested."
+  default: "2.21.0"
 
 ci_platform:
   type: str
