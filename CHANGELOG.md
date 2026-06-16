@@ -2,6 +2,49 @@
 
 All notable changes to this project are documented in this file.
 
+## [0.3.0] - 2026-06-16
+
+
+### Bug Fixes
+
+- JSON-escape free-text fields into TOML/YAML
+
+- Gate vagrant Makefile targets on include_vagrant
+
+- Make lint install Galaxy collections first
+
+- Enforce Galaxy name pattern for role/namespace/collection
+
+- Default min_ansible_version to the tested 2.21.0
+
+- Cap min_ansible_version default at ansible-lint-accepted 2.19.0
+
+- Generate from HEAD in self-test and local-debug copies
+
+- JSON-escape free-text fields into TOML/YAML
+
+- Make lint install Galaxy collections first
+
+- Pin molecule dependency versions
+
+- Exclude dev/test artifacts from the built tarball
+
+
+### Documentation
+
+- Fix Makefile sanity help text
+
+
+### Features
+
+- Allow pinning Galaxy collection versions
+
+
+### Tests
+
+- Add update-collection self-test job
+
+
 ## [0.2.0] - 2026-06-16
 
 
