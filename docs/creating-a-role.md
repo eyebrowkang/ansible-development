@@ -72,6 +72,23 @@ copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合�
 
 > 依赖更新已从这个 bundle 拆出，改由 `dependency_updates`（Renovate）负责，见下。forgejo-only 的 role 不问 `release_automation`、也不生成这些文件。
 
+## 仓库治理（GitHub，一次性）
+
+新仓库的一次性治理——分支保护、squash 合并策略、Actions token、必需检查——用脚手架的 [`scripts/setup-repo.sh`](../scripts/setup-repo.sh) 统一应用，对每个 role 仓库复用同一套规则。**在首次 CI 跑过之后**运行（GitHub 按名字匹配必需检查的 context，得先存在）：
+
+```bash
+# 默认必需检查：lint, molecule-docker, pr-title
+scripts/setup-repo.sh <owner>/<repo>
+
+# 检查名要对上仓库实际的 job——带发行版矩阵的 role 这样传：
+scripts/setup-repo.sh <owner>/ansible-role-x \
+  "lint,molecule-docker (debian12),molecule-docker (ubuntu2404),pr-title"
+```
+
+它设置：squash-only 合并（PR 标题作 commit message）+ 合并后自动删分支、Actions token 读写且可建 PR（release-please 需要）、`main-protection` ruleset（必需 PR + 必需检查、禁 force-push/删分支、repo admin 留紧急 bypass）。随后按需配 secrets：`GALAXY_API_KEY`、`AUTOMATION_TOKEN`。
+
+> 仅 GitHub（`gh` + GitHub rulesets API）。`include_docker=false` 的 vagrant-only role 在 GitHub 上没有 molecule job，必需检查传 `"lint,pr-title"`。Forgejo 的分支保护是另一套 API，本脚本未覆盖。
+
 ## 依赖更新自动化（Renovate）
 
 `dependency_updates`（默认开）用 **Renovate** 统一管理 uv（`pyproject.toml` + `uv.lock`）与 Actions 依赖，**双平台一套配置**（取代旧的 Dependabot）：
