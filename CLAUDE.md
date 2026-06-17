@@ -33,7 +33,7 @@ make test                # docker scenario  (= uv run molecule test)
 make test-vm             # vagrant scenario — use this, NOT `molecule test -s vagrant` (see #301)
 make lint                # yamllint + ansible-lint
 make converge / destroy  # iterate on the docker instance
-uv run copier update --trust   # pull template improvements back into an existing role
+uvx copier update --trust --defaults   # pull template improvements (uvx, not uv run — copier isn't a role dep; see docs/updating-from-template.md)
 ```
 Molecule has no "single test" — drive individual steps with `molecule converge` / `molecule verify` / `molecule idempotence` instead of the full `test` sequence.
 
