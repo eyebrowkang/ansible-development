@@ -2,6 +2,26 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.0] - 2026-06-17
+
+
+### Bug Fixes
+
+- Render collections: [] when galaxy_collections is empty
+
+- Destroy recorded molecule instances (#10)
+
+
+### Features
+
+- Add reusable setup-repo.sh repo-governance helper
+
+
+### Refactoring
+
+- Drop the per-repo Forgejo Renovate workflow
+
+
 ## [1.0.0] - 2026-06-17
 
 
