@@ -25,7 +25,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Check RENOVATE_TOKEN is set
+        id: guard
+        env:
+          RENOVATE_TOKEN: ${{ secrets.RENOVATE_TOKEN }}
+        run: |
+          if [ -z "$RENOVATE_TOKEN" ]; then
+            echo "::warning::RENOVATE_TOKEN not set — skipping Renovate. Set it (a Forgejo bot token with repo read/write + PR) to enable dependency updates."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Run Renovate
+        if: ${{ steps.guard.outputs.run == 'true' }}
         uses: https://github.com/renovatebot/github-action@v46.1.15
         env:
           # Forgejo is its own Renovate platform (the legacy 'gitea' platform will drop

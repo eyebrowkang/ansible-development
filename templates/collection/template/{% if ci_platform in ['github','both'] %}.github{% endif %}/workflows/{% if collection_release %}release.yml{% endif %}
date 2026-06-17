@@ -41,6 +41,9 @@ jobs:
       - name: Bump galaxy.yml version + render changelog
         run: |
           version="${GITHUB_REF_NAME#v}"
+          # Guard: a non-SemVer tag would corrupt the sed replacement (e.g. a '/' or '&').
+          printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)*$' \
+            || { echo "::error::tag '$GITHUB_REF_NAME' is not a SemVer X.Y.Z[-pre][+build]"; exit 1; }
           sed -i "s/^version:.*/version: ${version}/" galaxy.yml
           uv run antsibull-changelog release --version "${version}"
       - name: Build the collection
