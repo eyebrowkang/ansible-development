@@ -47,18 +47,16 @@ make test
 
 ## 拉取模板更新
 
-模板改进后，把改动合并回已生成的 role：
+已生成的 role 是 copier 管理的；脚手架发新 `vX.Y.Z` 版后，把模板改进三方合并回填：
 
 ```bash
 cd roles/<namespace>.<name>
-uv run copier update --trust       # 要求 role 是干净的 git 仓库
+uvx copier update --trust --defaults    # 要求 role 是干净的 git 仓库
 ```
 
-copier 依据 `.copier-answers.yml` 记录的答案与模板版本做三方合并；冲突会生成 `.rej`，手动解决即可。这正是选 copier 而非 cookiecutter 的核心价值——模板可持续回填。
+**完整通用流程**（前提、开分支、查 `.rej`、验证、提 PR、会改动什么）见 [用 copier update 拉取模板更新](updating-from-template.md)。
 
-> `kind` 默认 `role`，所以上面的命令不必显式带 `-d kind=role`。生成 collection 见 [creating-a-collection.md](creating-a-collection.md)。
->
-> 脚手架自身采用 semver tag（`vX.Y.Z`）发布版本，`copier update` 默认更新到最新 tag；首个版本发布前（尚无 tag）可用 `copier update --vcs-ref=HEAD` 跟最新提交。
+> `kind` 默认 `role`，所以不必显式带 `-d kind=role`。生成 collection 见 [creating-a-collection.md](creating-a-collection.md)。
 
 ## release 自动化（仅 GitHub）
 

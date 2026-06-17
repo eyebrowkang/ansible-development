@@ -77,8 +77,10 @@ make test        # molecule（example role）
 
 ```bash
 cd collections/ansible_collections/<namespace>/<name>
-uv run copier update --trust
+uvx copier update --trust --defaults
 ```
+
+完整通用流程见 [用 copier update 拉取模板更新](updating-from-template.md)。
 
 ## 插件（plugins）
 
