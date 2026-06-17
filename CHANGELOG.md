@@ -2,6 +2,46 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.0.0] - 2026-06-17
+
+
+### Bug Fixes
+
+- Address code-review findings (#1-#8)
+
+- Lean changelog dep-group + keep lint green after release
+
+- Harden release version parse, Forgejo release id, and renovate token
+
+
+### Features
+
+- Make docker/vagrant molecule scenarios optional for both kinds
+
+- Add Renovate dependency automation, replacing Dependabot
+
+- Scaffold example plugins + ansible-test units (include_plugins)
+
+- Add antsibull-changelog release automation (Galaxy + Forgejo)
+
+
+### Performance
+
+- Validate the static renovate.json once, not per variant
+
+
+### Refactoring
+
+- Flatten the conditional molecule job separator
+
+
+### Tests
+
+- Add adversarial free-text self-test variants
+
+- Smoke-test the declared min ansible-core floor (R6)
+
+
 ## [0.3.0] - 2026-06-16
 
 
