@@ -36,7 +36,7 @@ jobs:
           git fetch origin "$default"
           git checkout -B "$default" FETCH_HEAD
           echo "DEFAULT_BRANCH=$default" >> "$GITHUB_ENV"
-      - run: uv sync
+      - run: uv sync --group changelog   # adds antsibull-changelog (off the default sync)
       - name: Bump galaxy.yml version + render changelog
         run: |
           version="${GITHUB_REF_NAME#v}"
@@ -47,7 +47,7 @@ jobs:
 
       - name: Commit version bump + changelog (before creating the release)
         run: |
-          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
+          git add galaxy.yml CHANGELOG.md changelogs/   # changelog.yaml, .plugin-cache.yaml, folded fragments
           git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
           # Best-effort: a protected default branch or a push race must not fail the release.
           git push origin "HEAD:$DEFAULT_BRANCH" || echo "::warning::changelog not pushed (protected branch or race); commit it manually"

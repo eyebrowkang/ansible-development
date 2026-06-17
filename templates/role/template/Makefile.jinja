@@ -16,10 +16,10 @@ help:
 install:
 	uv sync
 
-# ansible-lint resolves the molecule scenario's collections (community.docker for the
-# docker scenario's create.yml) from the Galaxy install path, so install them first —
-# the same step CI runs before linting. molecule's own test sequence installs these via
-# dependency:galaxy.
+# ansible-lint resolves the active molecule scenario's collections (e.g. community.docker,
+# used by the docker scenario's create.yml) from the Galaxy install path, so install them
+# first — the same step CI runs before linting. molecule's own test sequence installs these
+# via dependency:galaxy.
 deps:
 	uv run ansible-galaxy collection install -r molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
 

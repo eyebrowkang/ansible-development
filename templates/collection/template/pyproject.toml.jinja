@@ -20,13 +20,19 @@ dev = [
 {% if include_docker %}    "docker>=7",
 {% endif %}    "ansible-lint>=26,<27",
     "yamllint>=1.35",
-{% if collection_release or collection_forgejo_release %}    "antsibull-changelog>=0.31",
-{% endif %}]
+]
 {% if include_vagrant %}
 vagrant = [
     {include-group = "dev"},
     "molecule-plugins[vagrant]>=25.8,<26",
     "python-vagrant>=1.0",
     "libvirt-python>=10",
+]
+{% endif %}{% if collection_changelog %}
+# Release-only: antsibull-changelog renders the changelog from changelogs/fragments/. Off
+# the default `uv sync` (lint/sanity/units don't need it) — the release workflows + `make
+# changelog` pull it via `uv sync --group changelog` / `uv run --group changelog`.
+changelog = [
+    "antsibull-changelog>=0.31",
 ]
 {% endif %}

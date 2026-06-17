@@ -37,7 +37,7 @@ jobs:
           git fetch origin "$default"
           git checkout -B "$default" FETCH_HEAD
           echo "DEFAULT_BRANCH=$default" >> "$GITHUB_ENV"
-      - run: uv sync
+      - run: uv sync --group changelog   # adds antsibull-changelog (off the default sync)
       - name: Bump galaxy.yml version + render changelog
         run: |
           version="${GITHUB_REF_NAME#v}"
@@ -47,7 +47,7 @@ jobs:
         run: uv run ansible-galaxy collection build --output-path dist
       - name: Commit version bump + changelog (before the irreversible publish)
         run: |
-          git add galaxy.yml CHANGELOG.md changelogs/changelog.yaml changelogs/fragments
+          git add galaxy.yml CHANGELOG.md changelogs/   # changelog.yaml, .plugin-cache.yaml, folded fragments
           git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
           # Best-effort: a protected default branch or a push race must not strand a successful
           # publish (the next step is irreversible). If this fails, commit the bump manually.

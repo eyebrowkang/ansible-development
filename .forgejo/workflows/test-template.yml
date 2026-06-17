@@ -437,6 +437,17 @@ jobs:
       - name: ansible-test units
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run ansible-test units --venv --color
+      - name: Simulate a release + re-lint
+        # Locks the invariant that antsibull's generated changelogs/changelog.yaml +
+        # .plugin-cache.yaml don't break yamllint/ansible-lint (they're yamllint-ignored).
+        # This is the gap that let a post-release lint break slip through before.
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          printf 'minor_changes:\n  - Self-test change.\n' > changelogs/fragments/selftest.yml
+          make changelog
+          make deps
+          uv run yamllint .
+          uv run ansible-lint
 
   smoke-role-floor:
     # R6: prove the generated role actually runs on its DECLARED minimum ansible-core

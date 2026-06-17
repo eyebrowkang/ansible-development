@@ -264,6 +264,14 @@ collection_forgejo_release:
     published to Galaxy — the self-hosted track). Uses the auto-injected GITHUB_TOKEN.
   default: "{{ kind == 'collection' and ci_platform == 'forgejo' }}"
 
+# Computed (never asked): true when either collection release track is on. The changelog
+# infra (changelogs/, antsibull dep + Make target) is gated on this single derived flag.
+# A when:false question still gets its computed default into the render context.
+collection_changelog:
+  type: bool
+  when: false
+  default: "{{ collection_release or collection_forgejo_release }}"
+
 # ================================================= shared: Forgejo builder image ===
 
 builder_registry:

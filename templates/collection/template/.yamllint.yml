@@ -23,3 +23,6 @@ ignore: |
   .ansible/
   .venv/
   .copier-answers.yml
+  # antsibull-changelog machine-generated output (its own format; not hand-edited)
+  changelogs/changelog.yaml
+  changelogs/.plugin-cache.yaml
