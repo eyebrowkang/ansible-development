@@ -24,7 +24,7 @@ uvx copier update --trust
 - `molecule/default` — **Docker** scenario (fast; runs on GitHub & Forgejo) *(optional, `include_docker`)*
 - `molecule/vagrant` — **Vagrant+libvirt** scenario (VM-only needs; local + self-hosted Forgejo) *(optional, `include_vagrant`; ≥1 scenario required)*
 - `.github/workflows` and/or `.forgejo/workflows` — CI (+ optional GitHub release automation: release-please / Galaxy import)
-- `renovate.json` (+ Forgejo `renovate.yml`) — **Renovate** dependency updates (`dependency_updates`, replaces Dependabot)
+- `renovate.json` — **Renovate** dependency updates (`dependency_updates`, replaces Dependabot; read by an external Renovate — GitHub App / self-hosted Forgejo bot)
 - `Makefile` — `make test` / `make test-vm` / `make lint`
 - `.pre-commit-config.yaml` (enable with `uvx pre-commit install`), `.yamllint.yml`, `.ansible-lint`, `meta/main.yml`
 

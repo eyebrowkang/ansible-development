@@ -28,7 +28,7 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `shell_templates` | role 是否渲染 shell 模板（`templates/**/*.sh.j2`）并需 shellcheck（生成 `tests/` + lint 步骤） |
 | `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Galaxy 导入 |
 | `forgejo_release` | （仅 `ci_platform` 含 forgejo 时问，纯 forgejo 默认开）生成 Forgejo tag 驱动发布：push `v*` tag → git-cliff 出 CHANGELOG + 建 Forgejo release |
-| `dependency_updates` | 是否生成 Renovate 依赖更新自动化（uv + Actions；默认开）。Forgejo 走定时 `renovate.yml` workflow，GitHub 用托管的 Renovate App 读 `renovate.json`。取代旧的 Dependabot |
+| `dependency_updates` | 是否生成 Renovate 依赖更新自动化（uv + Actions；默认开）。只生成平台无关的 `renovate.json`，由仓库外的 Renovate 读取（GitHub App / 自托管 Forgejo renovate-bot）。取代旧的 Dependabot |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
 | `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest`；默认是占位 `sha-REPLACE_ME`，记得替换 |
 
@@ -91,11 +91,12 @@ scripts/setup-repo.sh <owner>/ansible-role-x \
 
 ## 依赖更新自动化（Renovate）
 
-`dependency_updates`（默认开）用 **Renovate** 统一管理 uv（`pyproject.toml` + `uv.lock`）与 Actions 依赖，**双平台一套配置**（取代旧的 Dependabot）：
+`dependency_updates`（默认开）只生成一个 **`renovate.json`**——**平台无关**，github / forgejo / both 渲染完全一致，不再生成任何 workflow：
 
-- `renovate.json`——共享配置：`enabledManagers` 限定 `pep621`（uv）+ `github-actions`，每周一前出 PR，`lockFileMaintenance` 刷新 `uv.lock`，commit 前缀 `chore`（uv）/`ci`（Actions）。
-- `.forgejo/workflows/renovate.yml`（`ci_platform` 含 forgejo 时）——自托管 Renovate：定时 + 手动触发，经 `renovatebot/github-action` 走 runner 的 DooD socket（同 molecule）。需配 `RENOVATE_TOKEN`（bot 用户的 Forgejo access token，repo 读写 + PR），可选 `RENOVATE_GITHUB_COM_TOKEN`（只读 github.com PAT，取 release notes 避免限流）。
-- **GitHub** 侧无 workflow：装托管的 [Renovate App](https://github.com/apps/renovate) 到仓库即读 `renovate.json`（github.com 上 Renovate 的标准用法）。
+- `renovate.json`——`enabledManagers` 限定 `pep621`（uv：`pyproject.toml` + `uv.lock`）+ `github-actions`，每周一前出 PR，`lockFileMaintenance` 刷新 `uv.lock`，commit 前缀 `chore`（uv）/`ci`（Actions）。`github-actions` manager 的默认文件匹配同时覆盖 `.github/`、`.gitea/`、`.forgejo/` 下的 `workflows`/`actions`，所以 Forgejo 仓库里的 Actions 也照常被更新。
+- 真正“跑” Renovate 的是**仓库之外**的服务，读这个 `renovate.json`：
+  - **GitHub**：把托管的 [Renovate App](https://github.com/apps/renovate) 装到仓库。
+  - **Forgejo**：自托管一个集中的 renovate-bot（专用 bot 用户，按 repolist 定时扫描）——新仓库加进它的 repolist 即可，仓库本身无需任何配置或 secret。
 
 > Renovate 的 uv 流程靠 `uv.lock` 存在来识别，记得 `uv sync` 后把 `uv.lock` 一并提交。依赖只有下界（如 `community.general: ">=11.0.0,<12.0.0"`）时上界限定在已测大版本，大版本升级由 Renovate 单独开 PR 评审。
 

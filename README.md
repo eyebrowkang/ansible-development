@@ -56,7 +56,7 @@ make lint
 
 - `.github/workflows/ci.yml`——公共 runner 上跑 lint + docker 场景；
 - `.forgejo/workflows/{lint,molecule}.yml`——用 builder 镜像跑 lint + docker；vagrant 在 `[self-hosted, kvm]` 上**容器化**（`ansible-builder-vagrant` + `--privileged`）跑。
-- **依赖更新**（`dependency_updates`，默认开）：一套 **Renovate** 配置覆盖 uv + Actions——Forgejo 走定时 `renovate.yml`（需 `RENOVATE_TOKEN`），GitHub 用托管 Renovate App 读 `renovate.json`（取代旧的 Dependabot）。
+- **依赖更新**（`dependency_updates`，默认开）：生成一个平台无关的 `renovate.json`，由仓库外的 Renovate 读取——GitHub 用托管 Renovate App，Forgejo 用自托管的集中 renovate-bot（取代旧的 Dependabot）。
 - **发布**（可选）：role 在 GitHub 走 release-please（`release_automation`）、Forgejo 走 git-cliff（`forgejo_release`）；collection 走 antsibull-changelog（`collection_release` 发 Galaxy / `collection_forgejo_release` 建 Forgejo release）。
 
 > docker / vagrant 两轨均可选（`include_docker` / `include_vagrant`，至少开一个）。细节见 [docs/ci-overview.md](docs/ci-overview.md)。

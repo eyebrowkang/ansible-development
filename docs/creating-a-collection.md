@@ -57,7 +57,7 @@ make test        # molecule（example role）
 | `extensions/molecule/vagrant/` | vagrant+libvirt 场景（`include_vagrant` 时；与 standalone role 的 vagrant 场景对齐，靠短名解析 example role） |
 | `CHANGELOG.md` | ansible-lint `galaxy[no-changelog]` 要求 |
 | `pyproject.toml` + `Makefile` | uv 工具链 + 本地 target |
-| `renovate.json`（+ forgejo `renovate.yml`） | Renovate 依赖更新（`dependency_updates` 时，默认开；uv + Actions，与 role 同一套配置——见 [creating-a-role.md](creating-a-role.md) 的「依赖更新自动化（Renovate）」一节） |
+| `renovate.json` | Renovate 依赖更新（`dependency_updates` 时，默认开；uv + Actions，与 role 同一套配置、平台无关——见 [creating-a-role.md](creating-a-role.md) 的「依赖更新自动化（Renovate）」一节） |
 | `plugins/`（`include_plugins` 时） | 示例 filter（`filter/to_upper.py`）+ module（`modules/example_fact.py`）+ 共享 `module_utils/greeting.py`。module 带 GPLv3 头（ansible 约定，`validate-modules` 强制，与 collection 自身 license 无关），author 写成 `name (@handle)` 以过 doc 校验 |
 | `tests/unit/`（`include_plugins` 时） | filter 与 module_utils 的单测，`ansible-test units` 跑；`galaxy.yml` 的 `build_ignore` 同时从 `tests` 收窄到 `tests/output`，让单测 + sanity ignore 进 Galaxy artifact |
 

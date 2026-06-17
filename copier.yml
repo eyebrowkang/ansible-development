@@ -61,9 +61,9 @@ _message_after_copy: |
   {% endif %}
   {% if dependency_updates %}
 
-  Dependency updates (Renovate):
-  {% if ci_platform in ['github', 'both'] %}    • GitHub: install the Renovate App (https://github.com/apps/renovate) so it reads renovate.json.
-  {% endif %}{% if ci_platform in ['forgejo', 'both'] %}    • Forgejo: set a RENOVATE_TOKEN secret; .forgejo/workflows/renovate.yml runs weekly.
+  Dependency updates (Renovate): renovate.json is generated; an external Renovate reads it —
+  {% if ci_platform in ['github', 'both'] %}    • GitHub: install the Renovate App (https://github.com/apps/renovate).
+  {% endif %}{% if ci_platform in ['forgejo', 'both'] %}    • Forgejo: ensure your self-hosted renovate-bot includes this repo.
   {% endif %}
   {% endif %}
 
@@ -145,9 +145,9 @@ include_vagrant:
 dependency_updates:
   type: bool
   help: >-
-    Add Renovate dependency-update automation (uv + Actions)? Forgejo gets a scheduled
-    .forgejo/workflows/renovate.yml (needs a RENOVATE_TOKEN secret); GitHub uses the hosted
-    Renovate App reading renovate.json. Replaces the old Dependabot config.
+    Add Renovate dependency-update automation (uv + Actions)? Generates a renovate.json
+    read by an external Renovate (GitHub: the hosted Renovate App; Forgejo: your self-hosted
+    renovate-bot). Replaces the old Dependabot config.
   default: true
 
 # =================================================================== role-only ===
