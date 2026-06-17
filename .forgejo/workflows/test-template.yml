@@ -93,6 +93,10 @@ jobs:
             data: "-d 'author=a:b \"c\"' -d 'role_description=a \"b\": c'"
             scenario: default
             shellcheck: false
+          - name: no-collections   # empty galaxy_collections -> meta + vagrant collections.yml render []
+            data: -d galaxy_collections='[]'
+            scenario: default
+            shellcheck: false
     steps:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
