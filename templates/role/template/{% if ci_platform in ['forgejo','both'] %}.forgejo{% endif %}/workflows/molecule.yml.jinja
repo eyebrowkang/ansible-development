@@ -22,10 +22,10 @@ jobs:
         if: always()
         run: uv run molecule destroy
 {% endif %}
-{% if include_vagrant %}
-{% if include_docker %}
+{% if include_docker and include_vagrant %}
 
 {% endif %}
+{% if include_vagrant %}
   vagrant:
     # Containerized vagrant track: the job runs in the ansible-builder-vagrant image with
     # --privileged so it can reach /dev/kvm and run libvirtd inside the container (this

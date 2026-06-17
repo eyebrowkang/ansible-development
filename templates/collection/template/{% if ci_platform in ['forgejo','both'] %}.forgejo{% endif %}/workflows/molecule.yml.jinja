@@ -28,10 +28,10 @@ jobs:
         if: always()
         run: uv run molecule destroy
 {% endif %}
-{% if include_vagrant %}
-{% if include_docker %}
+{% if include_docker and include_vagrant %}
 
 {% endif %}
+{% if include_vagrant %}
   vagrant:
     # Containerized vagrant track for the example role — same setup as the standalone
     # role's vagrant job (privileged [self-hosted, kvm] runner, libvirtd under tini's
