@@ -50,6 +50,12 @@ jobs:
           echo "Resolved builder image tag: $tag"
           echo "builder=$reg/ansible-builder:$tag" >> "$GITHUB_OUTPUT"
           echo "vagrant=$reg/ansible-builder-vagrant:$tag" >> "$GITHUB_OUTPUT"
+      - name: Validate the static renovate.json templates
+        # renovate.json is a static (non-.jinja) file — identical for every render — so
+        # validate the source once here instead of per generated artifact in every lint variant.
+        run: |
+          python3 -m json.tool "templates/role/template/{% if dependency_updates %}renovate.json{% endif %}" >/dev/null
+          python3 -m json.tool "templates/collection/template/{% if dependency_updates %}renovate.json{% endif %}" >/dev/null
 
   lint-role:
     # Generate a role per answer combination and lint it. The matrix exercises every
@@ -115,9 +121,6 @@ jobs:
       - name: ansible-lint
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: uv run ansible-lint
-      - name: Validate renovate.json (JSON; yamllint/ansible-lint don't cover it)
-        working-directory: ${{ runner.temp }}/eyebrowkang.testrole
-        run: uv run python -m json.tool renovate.json >/dev/null
       - name: shellcheck rendered templates
         if: ${{ matrix.shellcheck }}
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
@@ -232,9 +235,6 @@ jobs:
       - name: ansible-lint
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run ansible-lint
-      - name: Validate renovate.json (JSON; yamllint/ansible-lint don't cover it)
-        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
-        run: uv run python -m json.tool renovate.json >/dev/null
 
   update-collection:
     # Same as update-role, for collections: generate a collection at the PR base, update it to
