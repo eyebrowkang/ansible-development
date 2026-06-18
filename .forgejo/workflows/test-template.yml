@@ -132,9 +132,9 @@ jobs:
 
   update-role:
     # Exercise `copier update` (the backfill that justifies copier over cookiecutter):
-    # generate a role at the PR base, then update it to HEAD and re-lint. Catches template
-    # changes that break the three-way merge or the recorded _src_path. fetch-depth:0 so
-    # copier can resolve both the base ref and HEAD.
+    # generate a role at the fork point with the target branch, then update it to HEAD and
+    # re-lint. Catches template changes that break the three-way merge or the recorded
+    # _src_path. fetch-depth:0 so copier can resolve both the base ref and HEAD.
     needs: resolve-image
     runs-on: ubuntu-latest
     container:
@@ -148,8 +148,14 @@ jobs:
       - name: Pick base ref to generate from
         id: base
         run: |
-          base="${{ github.event.pull_request.base.sha }}"
-          base="${base:-$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)}"
+          base_ref="${{ github.event.pull_request.base.ref }}"
+          if [ -n "$base_ref" ]; then
+            git fetch origin "${base_ref}:refs/remotes/origin/${base_ref}"
+            base="$(git merge-base HEAD "refs/remotes/origin/$base_ref")"
+          else
+            base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          fi
+          echo "Using template base ref: $base"
           echo "ref=$base" >> "$GITHUB_OUTPUT"
       - name: Generate role at the base ref
         run: >-
@@ -241,9 +247,10 @@ jobs:
         run: uv run ansible-lint
 
   update-collection:
-    # Same as update-role, for collections: generate a collection at the PR base, update it to
-    # HEAD, assert a clean three-way merge (no .rej), and re-lint. Covers the copier-update
-    # path that lint-collection alone doesn't. fetch-depth:0 so copier can resolve base + HEAD.
+    # Same as update-role, for collections: generate a collection at the fork point with the
+    # target branch, update it to HEAD, assert a clean three-way merge (no .rej), and re-lint.
+    # Covers the copier-update path that lint-collection alone doesn't. fetch-depth:0 so copier
+    # can resolve base + HEAD.
     needs: resolve-image
     runs-on: ubuntu-latest
     container:
@@ -257,8 +264,14 @@ jobs:
       - name: Pick base ref to generate from
         id: base
         run: |
-          base="${{ github.event.pull_request.base.sha }}"
-          base="${base:-$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)}"
+          base_ref="${{ github.event.pull_request.base.ref }}"
+          if [ -n "$base_ref" ]; then
+            git fetch origin "${base_ref}:refs/remotes/origin/${base_ref}"
+            base="$(git merge-base HEAD "refs/remotes/origin/$base_ref")"
+          else
+            base="$(git rev-parse HEAD~1 2>/dev/null || git rev-parse HEAD)"
+          fi
+          echo "Using template base ref: $base"
           echo "ref=$base" >> "$GITHUB_OUTPUT"
       - name: Generate collection at the base ref
         run: >-

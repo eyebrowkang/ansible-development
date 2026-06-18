@@ -1,8 +1,10 @@
 ---
 name: release
-# Scaffold's own release. Push a SemVer tag (e.g. v0.1.0) -> git-cliff builds the release
-# notes + CHANGELOG.md, then a Forgejo release is created via the API. The tag is also what
-# `copier update` targets as a version, so cutting a tag = publishing a template version.
+# Scaffold's own release. Add .release-notes/vX.Y.Z.md, then push a SemVer tag
+# (e.g. v0.1.0). The workflow combines that human summary/upgrade note with
+# git-cliff's automated Changes, creates a Forgejo release, and syncs CHANGELOG.md.
+# The tag is also what `copier update` targets as a version, so cutting a tag =
+# publishing a template version.
 # (Builder images are released separately via release-image.yml on `builder/v*` tags.)
 on:
   push:
@@ -47,7 +49,7 @@ jobs:
           install /tmp/gc/git-cliff /usr/local/bin/git-cliff
 
       - name: Build release notes for this tag
-        run: git-cliff --latest --strip header -o RELEASE_NOTES.md
+        run: bash scripts/render-git-cliff-notes.sh --mode release --tag "$GITHUB_REF_NAME" --output RELEASE_NOTES.md
 
       - name: Create the Forgejo release
         run: |
@@ -70,7 +72,7 @@ jobs:
           git config user.email "forgejo-actions@noreply.local"
           git fetch origin "$default"
           git checkout -B "$default" FETCH_HEAD
-          git-cliff -o CHANGELOG.md
+          bash scripts/render-git-cliff-notes.sh --mode changelog --tag "$GITHUB_REF_NAME" --output CHANGELOG.md
           git add CHANGELOG.md
           git diff --cached --quiet || {
             git commit -m "chore(changelog): $GITHUB_REF_NAME [skip ci]"

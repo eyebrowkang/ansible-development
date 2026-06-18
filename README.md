@@ -65,13 +65,17 @@ make lint
 
 脚手架与 builder 镜像各自独立用 tag 发布。
 
-**脚手架版本**（`copier update` 的目标）——合并到 main 后打 SemVer tag：
+**脚手架版本**（`copier update` 的目标）——合并到 main 后先写人工发布说明，再打 SemVer tag：
 
 ```bash
-git tag -a v0.1.0 -m "v0.1.0" && git push origin v0.1.0
+tag=v1.2.0
+cp .release-notes/TEMPLATE.md ".release-notes/$tag.md"
+$EDITOR ".release-notes/$tag.md"
+git add ".release-notes/$tag.md" && git commit -m "docs(release): $tag notes"
+git tag -a "$tag" -m "$tag" && git push origin "$tag"
 ```
 
-`.forgejo/workflows/release.yml` 用 git-cliff 生成 release notes、建 Forgejo release、回写 `CHANGELOG.md`。非 `v` 开头的 tag（如旧的 `archive/*`）被忽略。
+`.release-notes/vX.Y.Z.md` 里人工写 `Summary` 与 `Upgrade Notes`；`.forgejo/workflows/release.yml` 再把它与 git-cliff 自动生成的 `Changes` 合成 release notes、建 Forgejo release、回写 `CHANGELOG.md`。非 `v` 开头的 tag（如旧的 `archive/*`）被忽略。
 
 **builder 镜像版本**（role `builder_tag` 的 pin 目标，独立 cadence）——改了 `images/builder/` 后打 `builder/v*` tag：
 

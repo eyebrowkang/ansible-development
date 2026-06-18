@@ -1,8 +1,9 @@
 ---
 name: release
 # Tag-driven release for self-hosted Forgejo roles (not published to Galaxy).
-# Push a v* tag -> git-cliff builds release notes + CHANGELOG.md, then a Forgejo release
-# is created via the API using the auto-provided token (no extra secret needed).
+# Add .release-notes/vX.Y.Z.md, then push a v* tag. The workflow combines that
+# human summary/upgrade note with git-cliff's automated Changes, creates a
+# Forgejo release, and syncs CHANGELOG.md using the auto-provided token.
 on:
   push:
     tags:
@@ -31,7 +32,7 @@ jobs:
           install /tmp/gc/git-cliff /usr/local/bin/git-cliff
 
       - name: Build release notes for this tag
-        run: git-cliff --latest --strip header -o RELEASE_NOTES.md
+        run: bash scripts/render-git-cliff-notes.sh --mode release --tag "$GITHUB_REF_NAME" --output RELEASE_NOTES.md
 
       - name: Create the Forgejo release
         run: |
@@ -54,7 +55,7 @@ jobs:
           git config user.email "forgejo-actions@noreply.local"
           git fetch origin "$default"
           git checkout -B "$default" FETCH_HEAD
-          git-cliff -o CHANGELOG.md
+          bash scripts/render-git-cliff-notes.sh --mode changelog --tag "$GITHUB_REF_NAME" --output CHANGELOG.md
           git add CHANGELOG.md
           git diff --cached --quiet || {
             git commit -m "chore(changelog): $GITHUB_REF_NAME [skip ci]"

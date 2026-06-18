@@ -1,5 +1,8 @@
 # git-cliff configuration for the scaffold's own releases (push a v* tag).
-# Sections mirror the role/collection release setup so everything reads alike.
+# Human-facing release notes live in .release-notes/vX.Y.Z.md:
+#   ### Summary
+#   ### Upgrade Notes
+# git-cliff owns only the automated "Changes" section below.
 # Docs: https://git-cliff.org
 [changelog]
 header = """
@@ -13,10 +16,13 @@ body = """
 {% else %}
 ## [unreleased]
 {% endif %}
+
+### Changes
 {% for group, commits in commits | group_by(attribute="group") %}
-### {{ group | upper_first }}
+#### {{ group | upper_first }}
 {% for commit in commits %}
-- {{ commit.message | upper_first }}
+- {% if commit.scope %}_{{ commit.scope }}_: {% endif %}{{ commit.message | upper_first }}{% if commit.breaking %}
+  - **Breaking:** {{ commit.breaking_description }}{% endif %}
 {% endfor %}
 {% endfor %}
 """
@@ -25,17 +31,30 @@ footer = ""
 
 [git]
 conventional_commits = true
-filter_unconventional = true
+filter_unconventional = false
 split_commits = false
+protect_breaking_commits = true
 commit_parsers = [
+  # Release plumbing should not appear in user-facing notes.
+  { message = '^chore\(changelog\):', skip = true },
+  { message = '^chore\(release\):', skip = true },
+  { message = '^Merge ', skip = true },
+  { message = '^Merged ', skip = true },
+
   { message = "^feat", group = "Features" },
   { message = "^fix", group = "Bug Fixes" },
   { message = "^perf", group = "Performance" },
   { message = "^refactor", group = "Refactoring" },
   { message = "^docs", group = "Documentation" },
   { message = "^test", group = "Tests" },
-  # everything else (ci, chore, build, style, …) is hidden — mirrors the release-please sections
-  { message = ".*", skip = true },
+  { message = '^chore\(deps\)', group = "Dependencies" },
+  { message = "^build", group = "Build" },
+  { message = "^ci", group = "CI" },
+  { message = "^style", group = "Style" },
+  { message = "^revert", group = "Reverts" },
+  { message = "^chore", group = "Maintenance" },
+  # Non-conventional commits are deliberately kept instead of silently disappearing.
+  { message = ".*", group = "Other Changes" },
 ]
 filter_commits = false
 tag_pattern = "^v[0-9]"   # anchored: only vX.Y.Z release tags (not archive/* or builder/v*)

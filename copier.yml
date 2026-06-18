@@ -51,8 +51,11 @@ _message_after_copy: |
   {% if forgejo_release or collection_forgejo_release %}
 
   Forgejo release: push a tag to cut a release, e.g.
+  {% if kind == 'role' %}
+    $EDITOR .release-notes/v0.1.0.md
+  {% endif %}
     git tag v0.1.0 && git push origin v0.1.0
-  → .forgejo/workflows/release.yml builds the changelog ({% if kind == 'role' %}git-cliff{% else %}antsibull-changelog{% endif %}) and creates the release.
+  → .forgejo/workflows/release.yml builds the changelog ({% if kind == 'role' %}manual Summary/Upgrade Notes + git-cliff Changes{% else %}antsibull-changelog{% endif %}) and creates the release.
   {% endif %}
   {% if collection_release %}
 
@@ -201,7 +204,7 @@ release_automation:
 forgejo_release:
   type: bool
   when: "{{ kind == 'role' and ci_platform in ['forgejo', 'both'] }}"
-  help: "Add Forgejo tag-driven release? Push a v* tag -> git-cliff regenerates CHANGELOG.md + creates a Forgejo release. The classic tag flow for self-hosted roles (not published to Galaxy)."
+  help: "Add Forgejo tag-driven release? Write .release-notes/v*.md, push a v* tag -> git-cliff adds Changes, CHANGELOG.md is regenerated, and a Forgejo release is created."
   default: "{{ kind == 'role' and ci_platform == 'forgejo' }}"
 
 # ============================================================= collection-only ===

@@ -39,6 +39,19 @@ Pull future template improvements:
 ```bash
 copier update --trust
 ```
+{% if forgejo_release %}
+
+## Release notes
+
+Before pushing a `v*` tag, edit or create the matching manual note:
+
+```bash
+$EDITOR .release-notes/v0.1.0.md
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+`Summary` and `Upgrade Notes` are maintained in `.release-notes/<tag>.md`; `Changes` is generated from git history by git-cliff.
+{% endif %}
 
 ## License
 
