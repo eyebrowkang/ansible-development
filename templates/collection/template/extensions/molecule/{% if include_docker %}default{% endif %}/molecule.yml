@@ -13,10 +13,10 @@ driver:
     managed: true
 
 platforms:
-  - name: example-debian12
+  - name: example-debian13
     # systemd-enabled image so service/timer units can be tested in-container.
     # Pinned by digest (force_pull stays effective + reproducible); bump periodically.
-    image: geerlingguy/docker-debian12-ansible:latest@sha256:1f76107285118095a97e14673de67ee7a4372a840b35223cd0c1212fdd3cf5b3
+    image: geerlingguy/docker-debian13-ansible:latest@sha256:d18f6c4b36b7ad9be9f2418375ea73d431fef86d314709497facb56a8f8e76c6
     systemd: true
     groups:
       - example_servers
