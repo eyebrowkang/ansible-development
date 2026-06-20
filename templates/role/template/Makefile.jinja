@@ -1,5 +1,5 @@
 # Local dev targets (mirror CI). Requires uv: https://docs.astral.sh/uv/
-.PHONY: help install deps lint{% if include_docker %} test converge destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}{% if shell_templates %} shellcheck{% endif %}
+.PHONY: help install deps lint{% if include_docker %} test converge check destroy{% endif %}{% if include_vagrant %} test-vm destroy-vm{% endif %}{% if shell_templates %} shellcheck{% endif %}
 
 help:
 	@echo "install   - uv sync (dev toolchain)"
@@ -7,6 +7,7 @@ help:
 	@echo "deps      - install Galaxy collections that ansible-lint needs"
 {% if include_docker %}	@echo "test      - molecule test (docker scenario)"
 	@echo "converge  - molecule converge (docker)"
+	@echo "check     - molecule converge --check (dry-run; only if the role is check-mode safe)"
 	@echo "destroy   - molecule destroy (docker)"
 {% endif %}{% if include_vagrant %}	@echo "test-vm    - molecule test (vagrant scenario; needs 'uv sync --group vagrant' + libvirt/KVM)"
 	@echo "destroy-vm - molecule destroy (vagrant scenario)"
@@ -36,6 +37,12 @@ test:
 
 converge:
 	uv run molecule converge
+
+# Dry-run: everything after `--` is passed through to ansible-playbook, so this previews
+# changes via check mode. Only meaningful if the role is check-mode safe (every task
+# supports check mode / sets check_mode appropriately). See docs/molecule-testing.md.
+check:
+	uv run molecule converge -- --check
 
 destroy:
 	uv run molecule destroy

@@ -1,0 +1,6 @@
+---
+# Default variables for the role. Users override these in inventory/playbooks.
+#
+# Example (replace with your role's real defaults). Prefix every role variable with the
+# role name so it can't collide across roles (ansible-lint var-naming[no-role-prefix]).
+{{ role_name }}_marker_path: "/etc/{{ namespace }}.{{ role_name }}.applied"
