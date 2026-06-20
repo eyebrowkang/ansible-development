@@ -119,11 +119,13 @@ license:
 
 min_ansible_version:
   type: str
-  help: "Minimum ansible-core version (full X.Y.Z — collection meta/runtime.yml requires it). Capped at the newest version ansible-lint's meta-runtime rule accepts for requires_ansible (2.19.0); the dev/CI toolchain itself runs ansible-core 2.21.x."
+  help: "Minimum ansible-core version (full X.Y.Z — role meta/main.yml + collection meta/runtime.yml). Roles must be >= 2.17.0 (the docker floor job installs community.docker 5.x, which needs 2.17); both kinds <= 2.19.0 (ansible-lint's meta-runtime rule caps requires_ansible there). The dev/CI toolchain itself runs ansible-core 2.21.x."
   default: "2.19.0"
   validator: >-
     {% set _v = min_ansible_version.split('.') %}
     {% if _v | length != 3 or not (_v[0].isdigit() and _v[1].isdigit() and _v[2].isdigit()) %}min_ansible_version must be a full X.Y.Z version with numeric components (e.g. 2.19.0).
+    {% elif kind == 'role' and (_v | map('int') | list) < [2, 17, 0] %}min_ansible_version for a role must be >= 2.17.0: the docker floor job installs community.docker 5.x, which requires ansible-core >= 2.17 (see docs/molecule-testing.md).
+    {% elif (_v | map('int') | list) > [2, 19, 0] %}min_ansible_version must be <= 2.19.0: ansible-lint's meta-runtime rule caps requires_ansible there (the dev/CI toolchain runs 2.21.x).
     {% endif %}
 
 ci_platform:

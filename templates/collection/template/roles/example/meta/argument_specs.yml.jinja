@@ -9,10 +9,11 @@ argument_specs:
     short_description: "Example role in the {{ namespace }}.{{ collection_name }} collection"
     options:
       # Example option (replace with your role's real options). Keep the role-name prefix
-      # so option/var names can't collide across roles (ansible-lint var-naming).
+      # (ansible-lint var-naming). Declare type/required/choices here — the DEFAULT value
+      # lives in defaults/main.yml, not a second copy here (a spec default only fires when
+      # the var is otherwise undefined, and defaults/ always defines it).
       example_marker_path:
         type: path
         required: false
-        default: "/etc/{{ namespace }}.{{ collection_name }}.example.applied"
         description:
           - Absolute path of the marker file managed by tasks/main.yml.
