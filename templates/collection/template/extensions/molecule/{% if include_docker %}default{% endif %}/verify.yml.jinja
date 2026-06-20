@@ -1,11 +1,50 @@
 ---
+# Verify the role's effects from the OUTSIDE — assert the target's REAL state (files on
+# disk, `systemctl is-active`, a listening port), not a module's own "changed"/"ok" report.
+# A verify that re-runs the role's modules and trusts their return value is circular; read
+# the actual state with stat/slurp/command/service_facts and assert on that.
+# See docs/molecule-testing.md for the full pattern (and testinfra as an alternative).
 - name: Verify
   hosts: all
   become: true
   tasks:
-    - name: Confirm the role converged (replace with real checks)
+    - name: Stat the marker file the role manages (real on-disk state)
+      ansible.builtin.stat:
+        path: "/etc/{{ namespace }}.{{ collection_name }}.example.applied"
+      register: marker
+
+    - name: Assert the role created the marker with the expected mode
       ansible.builtin.assert:
         that:
-          - true
-        success_msg: "{{ namespace }}.{{ collection_name }}.example verified"
-        fail_msg: "Replace this with real verification of the role's effects"
+          - marker.stat.exists
+          - marker.stat.mode == "0644"
+        fail_msg: "marker missing or wrong mode — the example role did not converge as expected"
+        success_msg: "marker present"
+
+    - name: Read the marker's content from the target
+      ansible.builtin.slurp:
+        src: "/etc/{{ namespace }}.{{ collection_name }}.example.applied"
+      register: marker_blob
+
+    - name: Assert the content is what the role wrote
+      ansible.builtin.assert:
+        that:
+          - "'{{ namespace }}.{{ collection_name }}.example applied' in (marker_blob.content | b64decode)"
+        fail_msg: "marker content unexpected"
+        success_msg: "{{ namespace }}.{{ collection_name }}.example verified from the target's real state"
+
+    # When your role does more, assert ground truth — copy & adapt (each reads the SYSTEM,
+    # never a module's self-report). Reach for `command` where only the system knows:
+    #
+    #   - name: Service really running per systemd (not "the service module returned ok")
+    #     ansible.builtin.command: systemctl is-active --quiet foo
+    #     changed_when: false
+    #
+    #   - name: Port actually listening
+    #     ansible.builtin.wait_for: { port: 8080, timeout: 5 }
+    #
+    #   - name: Binary reports the expected version
+    #     ansible.builtin.command: foo --version
+    #     changed_when: false
+    #     register: foo_v
+    #     failed_when: "'1.2.' not in foo_v.stdout"
