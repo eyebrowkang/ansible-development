@@ -1,0 +1,18 @@
+---
+# Role argument validation. When the role is applied, Ansible validates these options
+# BEFORE running tasks/main.yml — turning bad input (wrong type, missing required, value
+# not in `choices`) into a clear early failure instead of a confusing mid-run crash.
+# This is the idiomatic input-validation / negative-testing hook; docs/molecule-testing.md
+# shows how to assert the failure from a dedicated molecule scenario.
+argument_specs:
+  main:
+    short_description: {{ (role_description or role_name) | tojson }}
+    options:
+      # Example option (replace with your role's real options). Keep the role-name prefix
+      # so option/var names can't collide across roles (ansible-lint var-naming).
+      {{ role_name }}_marker_path:
+        type: path
+        required: false
+        default: "/etc/{{ namespace }}.{{ role_name }}.applied"
+        description:
+          - Absolute path of the marker file managed by tasks/main.yml.
