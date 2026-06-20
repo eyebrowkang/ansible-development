@@ -21,6 +21,31 @@ jobs:
       - name: Destroy
         if: always()
         run: uv run molecule destroy
+
+  docker-floor:
+    # Floor test: run the docker scenario on the role's DECLARED minimum ansible-core
+    # (meta/main.yml min_ansible_version), not just the builder image's toolchain. This
+    # workflow already runs only on main/dispatch, so no extra gating. See docs/molecule-testing.md.
+    runs-on: ubuntu-latest
+    container:
+      image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run the docker scenario on the declared ansible-core floor
+        run: |
+          min="$(grep min_ansible_version meta/main.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
+          echo "Declared floor: ansible-core==${min}"
+          uv venv .venv-floor
+          uv pip install -p .venv-floor "ansible-core==${min}" "molecule>=26,<27" "docker>=7"
+          # molecule shells out to ansible-config/ansible-galaxy, so the floor venv must be on PATH.
+          export PATH="$PWD/.venv-floor/bin:$PATH"
+          ansible --version | head -1
+          molecule test
+      - name: Destroy
+        if: always()
+        run: |
+          export PATH="$PWD/.venv-floor/bin:$PATH"
+          molecule destroy || true
 {% endif %}
 {% if include_docker and include_vagrant %}
 
