@@ -1,7 +1,1 @@
----
-profile: production
-
-exclude_paths:
-  - .ansible/
-  - .venv/
-  - .copier-answers.yml
+../../_shared/.ansible-lint

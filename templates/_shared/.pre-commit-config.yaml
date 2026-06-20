@@ -1,0 +1,26 @@
+---
+# Optional local hooks. Enable once per clone (no project dependency needed):
+#   uv sync && uvx pre-commit install
+# yamllint/ansible-lint run through uv so they match `make lint` exactly, instead
+# of pinning a second copy at a possibly-different version.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+
+  - repo: local
+    hooks:
+      - id: yamllint
+        name: yamllint
+        entry: uv run yamllint -c .yamllint.yml
+        language: system
+        types: [yaml]
+      - id: ansible-lint
+        name: ansible-lint
+        entry: uv run ansible-lint
+        language: system
+        pass_filenames: false

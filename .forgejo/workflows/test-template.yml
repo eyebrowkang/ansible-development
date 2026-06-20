@@ -51,8 +51,10 @@ jobs:
           echo "builder=$reg/ansible-builder:$tag" >> "$GITHUB_OUTPUT"
           echo "vagrant=$reg/ansible-builder-vagrant:$tag" >> "$GITHUB_OUTPUT"
       - name: Validate the static renovate.json templates
-        # renovate.json is a static (non-.jinja) file — identical for every render — so
-        # validate the source once here instead of per generated artifact in every lint variant.
+        # renovate.json is a static (non-.jinja) file, identical for both kinds, so it's
+        # de-duplicated: both paths below are relative symlinks into templates/_shared/
+        # (json.tool follows them transparently). Validating both still proves each
+        # symlink resolves to valid JSON. Validate here once instead of per lint variant.
         run: |
           python3 -m json.tool "templates/role/template/{% if dependency_updates %}renovate.json{% endif %}" >/dev/null
           python3 -m json.tool "templates/collection/template/{% if dependency_updates %}renovate.json{% endif %}" >/dev/null
