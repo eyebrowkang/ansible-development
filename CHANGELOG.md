@@ -2,6 +2,35 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.3.1] - 2026-06-20
+
+### Summary
+
+修复 v1.3.0 引入的 floor 作业的一个缺陷。
+
+floor 作业（`molecule-floor` / `docker-floor`）此前用 `uv venv .venv-floor` 建虚拟环境，继承了仓库默认的 Python 3.13。但 ansible-core 低于 2.18 的版本不支持 Python 3.13，导致**声明 `min_ansible_version` < 2.18 的 role 会在 floor 作业里因环境不兼容而假失败**（与 role 代码无关）。脚手架默认 floor 是 2.19，所以一直没暴露，直到有 role 把 floor 调低才触发。
+
+本版本把 floor venv 钉到 **Python 3.12**（兼容 2.16–2.19 全部 floor），并在生成的 GitHub / Forgejo floor 作业和脚手架自测的 `smoke-role-floor` 中同步修复。
+
+### Upgrade Notes
+
+已生成的 role 运行 `copier update --trust` 即引入本修复（floor 作业的增量改动，正常会干净并入）。
+
+- **声明的 `min_ansible_version` 须 ≥ 2.17**：docker 测试栈用 `community.docker` 5.x（`requires_ansible: '>=2.17.0'`），低于此的 floor 无法用 docker 场景验证。请把 floor 调到可测版本，或单独给 floor 作业换更老的 `community.docker`。详见 `docs/molecule-testing.md`。
+- 无需其他配置调整。
+
+### Changes
+
+#### Bug Fixes
+
+- _templates_: Pin the floor-test venv to Python 3.12
+
+
+#### Documentation
+
+- _release_: V1.3.1 notes
+
+
 ## [1.3.0] - 2026-06-20
 
 ### Summary
