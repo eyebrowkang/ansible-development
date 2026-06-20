@@ -14,6 +14,16 @@ _answers_file: ".copier-answers.yml"
 _templates_suffix: ".jinja"
 _min_copier_version: "9.4.0"
 
+# Follow symlinks at render time instead of recreating them in the output. Files
+# byte-identical across the role and collection subtrees are de-duplicated as
+# relative symlinks into templates/_shared/ (see templates/_shared/README.md);
+# with this off, copier reads each symlink's TARGET and writes a real file into
+# the generated artifact (no symlink ever leaks into a generated role/collection).
+# This is copier's default, but we pin it explicitly because the whole dedup
+# scheme depends on it. (copier's guard still forbids symlink targets outside the
+# template repo, so the shared dir must live inside templates/.)
+_preserve_symlinks: false
+
 # trim_blocks + lstrip_blocks make {% ... %} control lines render cleanly in YAML.
 _envops:
   trim_blocks: true

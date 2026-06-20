@@ -1,0 +1,45 @@
+---
+- name: Destroy
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Check molecule instance config
+      ansible.builtin.stat:
+        path: "{{ molecule_instance_config }}"
+      register: molecule_instance_config_file
+
+    - name: Load molecule instance config
+      ansible.builtin.slurp:
+        src: "{{ molecule_instance_config }}"
+      register: molecule_instance_config_raw
+      when: molecule_instance_config_file.stat.exists
+
+    - name: Set recorded molecule instances
+      ansible.builtin.set_fact:
+        molecule_instance_conf: >-
+          {{
+            (
+              molecule_instance_config_raw.content
+              | default('')
+              | b64decode
+              | from_yaml
+            ) | default([], true)
+          }}
+
+    - name: Destroy molecule instance(s)
+      community.docker.docker_container:
+        name: "{{ item.instance }}"
+        state: absent
+        force_kill: true
+      loop: "{{ molecule_instance_conf }}"
+      loop_control:
+        label: "{{ item.instance }}"
+
+    - name: Reset instance config
+      ansible.builtin.copy:
+        content: |
+          # Molecule managed
+          []
+        dest: "{{ molecule_instance_config }}"
+        mode: "0600"
