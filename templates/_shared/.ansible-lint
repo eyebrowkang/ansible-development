@@ -5,3 +5,6 @@ exclude_paths:
   - .ansible/
   - .venv/
   - .copier-answers.yml
+  # ansible-test writes junit/coverage artefacts here; they otherwise trip a local
+  # `make lint` run that follows `make sanity`/`units`.
+  - tests/output/
