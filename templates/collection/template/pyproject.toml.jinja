@@ -11,8 +11,8 @@ package = false
 
 # Dev toolchain. `ansible-test` ships with ansible-core (sanity needs no extra dep);
 # molecule drives the example role's docker scenario via the built-in delegated driver.
-# `vagrant` is opt-in (`uv sync --group vagrant`) and layers molecule-plugins[vagrant]
-# on top of `dev` via include-group.
+# `vagrant` is installed explicitly (`uv sync --group vagrant`) and layers
+# molecule-plugins[vagrant] on top of `dev` via include-group.
 [dependency-groups]
 dev = [
     "ansible-core>=2.21,<2.22",

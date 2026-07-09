@@ -139,8 +139,8 @@ ci_platform:
 
 # ========================================= shared: molecule test scenarios ===
 # Both roles and collections ship molecule scenarios. At least one must be enabled
-# (validated on include_vagrant, the second question). Defaults preserve prior
-# behavior: roles get docker+vagrant, collections get docker only.
+# (validated on include_vagrant, the second question). Defaults enable both docker
+# and vagrant so generated artifacts have a fast container track and a real-VM track.
 
 include_docker:
   type: bool
@@ -150,7 +150,7 @@ include_docker:
 include_vagrant:
   type: bool
   help: "Add the vagrant+libvirt molecule scenario? (VM-only needs: kernel modules, reboot, real networking)"
-  default: "{{ kind == 'role' }}"
+  default: true
   validator: >-
     {% if not include_docker and not include_vagrant %}At least one molecule scenario is required — enable include_docker and/or include_vagrant.
     {% endif %}

@@ -28,7 +28,7 @@ copier 会询问（collection 相关）：
 
 外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`builder_*`。
 
-> **molecule 场景开关（`include_docker` / `include_vagrant`）**：与 role 共享。`include_docker`（默认开）生成 `extensions/molecule/default/`（docker，example role）；`include_vagrant`（collection 默认**关**）生成 `extensions/molecule/vagrant/`（vagrant+libvirt，靠短名解析 example role）。两者至少开一个，否则 copier 校验报错。
+> **molecule 场景开关（`include_docker` / `include_vagrant`）**：与 role 共享。`include_docker`（默认开）生成 `extensions/molecule/default/`（docker，example role）；`include_vagrant`（默认开）生成 `extensions/molecule/vagrant/`（vagrant+libvirt，靠短名解析 example role）。两者至少开一个，否则 copier 校验报错。
 
 > **目录命名约定（强制）**：collection 必须放在 `…/ansible_collections/<namespace>/<collection_name>/`。
 > `ansible-test sanity` 从路径（不是 galaxy.yml）推断 namespace/name；放错路径会直接报 "must be run from within a collection"。脚手架的 `collections/` 工作区天然满足这个布局。
