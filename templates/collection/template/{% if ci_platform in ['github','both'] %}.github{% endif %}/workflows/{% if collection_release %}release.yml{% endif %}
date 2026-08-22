@@ -1,21 +1,15 @@
 ---
 name: Release
-# Tag-driven Galaxy release. Push a vX.Y.Z tag and this, on the default-branch tip:
-#   1. sets galaxy.yml version from the tag + folds changelogs/fragments/ into CHANGELOG.md,
-#   2. ansible-galaxy builds the collection,
-#   3. commits the bumped version + changelog back (best-effort — see notes),
-#   4. publishes to Ansible Galaxy and cuts a GitHub release.
+# Tag-driven Galaxy release.  Prepare the release commit first: bump galaxy.yml, run
+# `make changelog`, commit, then push a plain SemVer tag such as 0.2.0 (bare, no v —
+# it must equal galaxy.yml's version).  A release tag is immutable: this workflow
+# checks out and builds that exact tag — it never writes a branch or moves a tag —
+# then publishes to Ansible Galaxy and cuts a GitHub release.
 # Requires a GALAXY_API_KEY secret (https://galaxy.ansible.com -> Preferences -> API key).
-# Notes:
-#   - It builds the DEFAULT-BRANCH TIP, so tag the tip (the normal case: `git tag` on the
-#     branch you just merged). The commit-back runs BEFORE the irreversible publish and is
-#     best-effort: a protected branch or a race won't strand a successful publish — if the
-#     push fails, commit the bump + changelog manually. For a protected branch you can instead
-#     drop the commit step and run `make changelog` + bump the version locally before tagging.
 on:
   push:
     tags:
-      - 'v*'
+      - '[0-9]*'
 
 permissions:
   contents: write
@@ -26,35 +20,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history + tags for antsibull-changelog
+          ref: ${{ github.ref }}
+          fetch-depth: 0
       - uses: astral-sh/setup-uv@v6
-      - name: Check out the default branch (release commit lands here)
+      - name: Verify immutable release input
         run: |
-          default="${{ github.event.repository.default_branch }}"
-          default="${default:-main}"
-          git config user.name "github-actions"
-          git config user.email "github-actions@users.noreply.github.com"
-          git fetch origin "$default"
-          git checkout -B "$default" FETCH_HEAD
-          echo "DEFAULT_BRANCH=$default" >> "$GITHUB_ENV"
-      - run: uv sync --group changelog   # adds antsibull-changelog (off the default sync)
-      - name: Bump galaxy.yml version + render changelog
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          # Guard: a non-SemVer tag would corrupt the sed replacement (e.g. a '/' or '&').
+          version="$GITHUB_REF_NAME"
           printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)*$' \
-            || { echo "::error::tag '$GITHUB_REF_NAME' is not a SemVer X.Y.Z[-pre][+build]"; exit 1; }
-          sed -i "s/^version:.*/version: ${version}/" galaxy.yml
-          uv run antsibull-changelog release --version "${version}"
-      - name: Build the collection
+            || { echo "::error::tag '$version' is not a plain SemVer X.Y.Z[-pre][+build]"; exit 1; }
+          metadata_version="$(awk '/^version:/ { print $2; exit }' galaxy.yml)"
+          [ "$metadata_version" = "$version" ] \
+            || { echo "::error::tag '$version' does not match galaxy.yml version '$metadata_version'"; exit 1; }
+          [ "$(git describe --exact-match --tags HEAD)" = "$version" ] \
+            || { echo "::error::HEAD is not exactly tag '$version'"; exit 1; }
+      - run: uv sync
+      - name: Build the collection from the release tag
         run: uv run ansible-galaxy collection build --output-path dist
-      - name: Commit version bump + changelog (before the irreversible publish)
-        run: |
-          git add galaxy.yml CHANGELOG.md changelogs/   # changelog.yaml, .plugin-cache.yaml, folded fragments
-          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
-          # Best-effort: a protected default branch or a push race must not strand a successful
-          # publish (the next step is irreversible). If this fails, commit the bump manually.
-          git push origin "HEAD:$DEFAULT_BRANCH" || echo "::warning::changelog not pushed (protected branch or race); commit it manually"
       - name: Publish to Ansible Galaxy
         run: uv run ansible-galaxy collection publish --api-key "${{ secrets.GALAXY_API_KEY }}" dist/*.tar.gz
       - name: Create the GitHub release

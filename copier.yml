@@ -60,17 +60,25 @@ _message_after_copy: |
   {% endif %}
   {% if forgejo_release or collection_forgejo_release %}
 
-  Forgejo release: push a tag to cut a release, e.g.
   {% if kind == 'role' %}
+  Forgejo release: push a tag to cut a release, e.g.
     $EDITOR .release-notes/v0.1.0.md
-  {% endif %}
     git tag v0.1.0 && git push origin v0.1.0
-  → .forgejo/workflows/release.yml builds the changelog ({% if kind == 'role' %}manual Summary/Upgrade Notes + git-cliff Changes{% else %}antsibull-changelog{% endif %}) and creates the release.
+  → .forgejo/workflows/release.yml builds the changelog (manual Summary/Upgrade Notes + git-cliff Changes) and creates the release.
+  {% else %}
+  Forgejo release: prepare the release commit, then push the matching plain SemVer tag
+  (bare, no v — it must equal galaxy.yml's version), e.g.
+    <bump galaxy.yml version> && make changelog && git commit
+    git tag 0.1.0 && git push origin 0.1.0
+  → .forgejo/workflows/release.yml verifies + builds that immutable tag and creates the release with the tarball attached.
+  {% endif %}
   {% endif %}
   {% if collection_release %}
 
-  Galaxy release: push a v* tag → .github/workflows/release.yml publishes the collection to
-    Ansible Galaxy and cuts a GitHub release. Configure a GALAXY_API_KEY secret first.
+  Galaxy release: prepare the release commit (bump galaxy.yml + make changelog + commit),
+    then push the matching plain SemVer tag (e.g. git tag 0.1.0) → .github/workflows/release.yml
+    builds that immutable tag, publishes to Ansible Galaxy and cuts a GitHub release.
+    Configure a GALAXY_API_KEY secret first.
   {% endif %}
   {% if dependency_updates %}
 
@@ -265,18 +273,21 @@ collection_release:
   type: bool
   when: "{{ kind == 'collection' and ci_platform in ['github', 'both'] }}"
   help: >-
-    Add GitHub -> Galaxy release automation? Push a v* tag and antsibull-changelog renders
-    the changelog from changelogs/fragments/, ansible-galaxy builds + publishes the
-    collection to Ansible Galaxy, and a GitHub release is cut. Needs a GALAXY_API_KEY secret.
+    Add GitHub -> Galaxy release automation? Prepare the release commit (bump galaxy.yml +
+    make changelog + commit), then push the matching plain SemVer tag (0.2.0, no v): the
+    workflow verifies + builds that immutable tag, publishes the collection to Ansible
+    Galaxy, and cuts a GitHub release. Needs a GALAXY_API_KEY secret.
   default: "{{ kind == 'collection' and ci_platform in ['github', 'both'] }}"
 
 collection_forgejo_release:
   type: bool
   when: "{{ kind == 'collection' and ci_platform in ['forgejo', 'both'] }}"
   help: >-
-    Add Forgejo tag-driven release? Push a v* tag and antsibull-changelog renders the
-    changelog, then a Forgejo release is created with the built tarball attached (not
-    published to Galaxy — the self-hosted track). Uses the auto-injected GITHUB_TOKEN.
+    Add Forgejo tag-driven release? Prepare the release commit (bump galaxy.yml +
+    make changelog + commit), then push the matching plain SemVer tag (0.2.0, no v): the
+    workflow verifies + builds that immutable tag and creates a Forgejo release with the
+    tarball attached (not published to Galaxy — the self-hosted track). Uses the
+    auto-injected GITHUB_TOKEN.
   default: "{{ kind == 'collection' and ci_platform == 'forgejo' }}"
 
 # Computed (never asked): true when either collection release track is on. The changelog

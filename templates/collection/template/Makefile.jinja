@@ -42,7 +42,7 @@ units:
 	uv run ansible-test units --venv --color
 {% endif %}{% if collection_changelog %}
 # Fold changelogs/fragments/*.yml into changelogs/changelog.yaml + regenerate CHANGELOG.md.
-# Bump galaxy.yml's version first (or the v* tag release workflow does both in CI).
+# Bump galaxy.yml's version first, then commit the generated files before tagging.
 # antsibull-changelog lives in the opt-in `changelog` dependency-group (off the default sync).
 changelog:
 	uv run --group changelog antsibull-changelog release

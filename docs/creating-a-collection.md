@@ -23,8 +23,8 @@ copier 会询问（collection 相关）：
 | `collection_dependencies` | galaxy.yml 的 `dependencies`（`name: version` 映射） |
 | `collection_tags` | galaxy.yml tags——**必须含一个 Galaxy 命名 tag**（`tools`/`infrastructure`/`linux`…），否则 ansible-lint 的 `galaxy[tags]` 报错 |
 | `include_plugins` | 是否脚手架示例插件（一个 filter + 一个 module，共享 `module_utils`）+ 单测，并打开 `ansible-test units`（默认关；关时 collection 保持 roles-only） |
-| `collection_release` | （仅 `ci_platform` 含 github 时问）GitHub→Galaxy 发布：push `v*` tag → antsibull-changelog 出 changelog + `ansible-galaxy collection publish` 到 Galaxy + 建 GitHub release。需 `GALAXY_API_KEY` secret |
-| `collection_forgejo_release` | （仅 `ci_platform` 含 forgejo 时问；纯 forgejo 默认开，`both` 默认关）Forgejo tag 驱动发布：push `v*` tag → antsibull-changelog 出 changelog + 建 Forgejo release 附 tarball（不发 Galaxy） |
+| `collection_release` | （仅 `ci_platform` 含 github 时问）GitHub→Galaxy 发布：本地 bump+changelog+commit 后 push 裸 SemVer tag（如 `0.2.0`，不带 `v`）→ workflow 校验并构建该不可变 tag、`ansible-galaxy collection publish` 到 Galaxy + 建 GitHub release。需 `GALAXY_API_KEY` secret |
+| `collection_forgejo_release` | （仅 `ci_platform` 含 forgejo 时问；纯 forgejo 默认开，`both` 默认关）Forgejo tag 驱动发布：本地 bump+changelog+commit 后 push 裸 SemVer tag → workflow 校验并构建该不可变 tag + 建 Forgejo release 附 tarball（不发 Galaxy） |
 
 外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`builder_*`。
 
@@ -96,10 +96,13 @@ uvx copier update --trust --defaults
 两个开关——`collection_release`（GitHub→Galaxy）与 `collection_forgejo_release`（Forgejo），changelog 都用 **antsibull-changelog**（fragment 驱动，不是 commit 驱动）：
 
 - `changelogs/config.yaml` + `changelogs/fragments/`——每次改动加一个 fragment（`changelogs/fragments/<名字>.yml`，顶层键是 section：`minor_changes` / `bugfixes` / `breaking_changes` / …）。
-- 发布：push `vX.Y.Z` tag → workflow 切到默认分支 → 把版本写进 `galaxy.yml` → `antsibull-changelog release` 折叠 fragments 进 `changelogs/changelog.yaml` 并重生成 `CHANGELOG.md` → `ansible-galaxy collection build`：
-  - **GitHub**（`.github/workflows/release.yml`）：`ansible-galaxy collection publish` 发到 Galaxy + 建 GitHub release（需 `GALAXY_API_KEY` secret）。
-  - **Forgejo**（`.forgejo/workflows/release.yml`，builder 镜像内）：调 Forgejo API 建 release 并附 tarball（不发 Galaxy，自托管线；用自动注入的 `GITHUB_TOKEN`，无需额外 secret）。
-- 两个 workflow 都把 bump 后的 `galaxy.yml` + changelog 回写默认分支（`[skip ci]`）；默认分支若受保护禁止直接 push，删掉回写那步、改成本地 `make changelog` + 手动 bump 后再打 tag。
+- 发布——**先准备、后打 tag**。tag 用**裸 SemVer**（`0.3.0`，不带 `v`）：这是 collection 生态的主流惯例，而且 `ansible-galaxy` 安装 `type: git` 源时把 `version:` 当 git ref 用，tag 名与 `galaxy.yml` 版本一致后，消费端才能直接写 `version: "0.3.0"`：
+  1. 本地把新版本写进 `galaxy.yml` → `make changelog`（折叠 fragments）→ commit（如 `chore(release): prepare 0.3.0`）；
+  2. 在该提交上 `git tag 0.3.0 && git push origin 0.3.0`；
+  3. workflow 检出**这个 tag 本身**并校验（纯 SemVer、与 `galaxy.yml` 版本一致、HEAD 恰为该 tag），`ansible-galaxy collection build` 后发布——**tag 不可变**：不回写分支、不移动 tag：
+     - **GitHub**（`.github/workflows/release.yml`）：`ansible-galaxy collection publish` 发到 Galaxy + 建 GitHub release（需 `GALAXY_API_KEY` secret）。
+     - **Forgejo**（`.forgejo/workflows/release.yml`，builder 镜像内）：调 Forgejo API 建 release 并附 tarball，release body 取该版本 changelog 的 `release_summary`（不发 Galaxy，自托管线；用自动注入的 `GITHUB_TOKEN`，无需额外 secret）。
+- role 的两条发布轨仍用 `v*` tag（git-cliff / release-please 一套不变）；裸 tag 是 collection 轨的约定。
 - `make changelog` = `antsibull-changelog release`（本地折叠 fragments）。`changelogs/config.yaml` 存在时，`make sanity` 会跑 `ansible-test` 的 `changelog` 测试校验 fragments 与 `changelog.yaml`。
 - `both` 平台默认只开 GitHub 那条（`collection_forgejo_release` 默认关）以免双发布——与 role 的 `release_automation`/`forgejo_release` 一致。
 

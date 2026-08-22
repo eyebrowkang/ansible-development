@@ -1,17 +1,13 @@
 ---
 name: release
-# Tag-driven Forgejo release (self-hosted; not published to Galaxy). Push a vX.Y.Z tag
-# and this, on the default-branch tip: bumps galaxy.yml, folds changelogs/fragments/ into
-# CHANGELOG.md via antsibull-changelog, builds the tarball, commits the bump + changelog
-# back (best-effort), then creates a Forgejo release with the tarball attached. Uses the
-# auto-injected GITHUB_TOKEN; no extra secret.
-# Notes: it builds the DEFAULT-BRANCH TIP, so tag the tip. The commit-back is best-effort —
-# a protected branch or a push race won't fail the release; for a protected branch you can
-# drop the commit step and run `make changelog` + bump the version locally before tagging.
+# Tag-driven Forgejo release (self-hosted; not published to Galaxy).  Prepare the
+# release commit first: bump galaxy.yml, run `make changelog`, commit, then push a
+# plain SemVer tag such as 0.2.2.  A release tag is immutable: this workflow checks
+# out and builds that exact tag and never writes a branch or moves a tag.
 on:
   push:
     tags:
-      - 'v*'
+      - '[0-9]*'
 
 permissions:
   contents: write
@@ -25,41 +21,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # full history + tags for antsibull-changelog
-      - name: Check out the default branch (release commit lands here)
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - name: Verify immutable release input
         run: |
           git config --global --add safe.directory "$(pwd)"
-          default="${{ github.event.repository.default_branch }}"
-          default="${default:-main}"
-          git config user.name "forgejo-actions"
-          git config user.email "forgejo-actions@noreply.local"
-          git fetch origin "$default"
-          git checkout -B "$default" FETCH_HEAD
-          echo "DEFAULT_BRANCH=$default" >> "$GITHUB_ENV"
-      - run: uv sync --group changelog   # adds antsibull-changelog (off the default sync)
-      - name: Bump galaxy.yml version + render changelog
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          # Guard: a non-SemVer tag would corrupt the sed replacement (e.g. a '/' or '&').
+          version="$GITHUB_REF_NAME"
           printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)*$' \
-            || { echo "::error::tag '$GITHUB_REF_NAME' is not a SemVer X.Y.Z[-pre][+build]"; exit 1; }
-          sed -i "s/^version:.*/version: ${version}/" galaxy.yml
-          uv run antsibull-changelog release --version "${version}"
-      - name: Build the collection
-        run: uv run ansible-galaxy collection build --output-path dist
-
-      - name: Commit version bump + changelog (before creating the release)
+            || { echo "::error::tag '$version' is not a plain SemVer X.Y.Z[-pre][+build]"; exit 1; }
+          metadata_version="$(awk '/^version:/ { print $2; exit }' galaxy.yml)"
+          [ "$metadata_version" = "$version" ] \
+            || { echo "::error::tag '$version' does not match galaxy.yml version '$metadata_version'"; exit 1; }
+          [ "$(git describe --exact-match --tags HEAD)" = "$version" ] \
+            || { echo "::error::HEAD is not exactly tag '$version'"; exit 1; }
+      - run: uv sync
+      - name: Build the collection from the release tag
         run: |
-          git add galaxy.yml CHANGELOG.md changelogs/   # changelog.yaml, .plugin-cache.yaml, folded fragments
-          git diff --cached --quiet || git commit -m "chore(release): $GITHUB_REF_NAME [skip ci]"
-          # Best-effort: a protected default branch or a push race must not fail the release.
-          git push origin "HEAD:$DEFAULT_BRANCH" || echo "::warning::changelog not pushed (protected branch or race); commit it manually"
+          uv run ansible-galaxy collection build --output-path dist
 
       - name: Create the Forgejo release + upload the tarball
         run: |
           tarball="$(ls dist/*.tar.gz)"
-          rel_id="$(jq -n --arg tag "$GITHUB_REF_NAME" \
-              '{tag_name: $tag, name: $tag, body: ("Released " + $tag + ". See CHANGELOG.md."), draft: false, prerelease: false}' \
+          version="$GITHUB_REF_NAME"
+          # Use the release_summary from the changelog (may be non-English) as the
+          # release body; fall back to a short pointer if it can't be read.
+          body="$(uv run python -c '
+          import sys
+
+          import yaml
+
+          version = sys.argv[1]
+          with open("changelogs/changelog.yaml", encoding="utf-8") as changelog:
+              data = yaml.safe_load(changelog)
+
+          print(
+              data.get("releases", {})
+              .get(version, {})
+              .get("changes", {})
+              .get("release_summary", "")
+          )
+          ' "$version" 2>/dev/null || true)"
+          [ -n "$body" ] || body="已发布 ${GITHUB_REF_NAME},详见 CHANGELOG.md。"
+          rel_id="$(jq -n --arg tag "$GITHUB_REF_NAME" --arg body "$body" \
+              '{tag_name: $tag, name: $tag, body: $body, draft: false, prerelease: false}' \
             | curl -fsSL -X POST \
                 "$GITHUB_SERVER_URL/api/v1/repos/$GITHUB_REPOSITORY/releases" \
                 -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
