@@ -218,6 +218,9 @@ jobs:
           - name: plugins          # include_plugins: filter+module+units + narrowed build_ignore (lint/render only here; sanity+units in smoke-collection-plugins)
             data: -d ci_platform=both -d include_plugins=true
             scenario: default
+          - name: unit-tests       # include_unit_tests alone: the units wiring (Make target, CI jobs, tests/unit/.gitkeep, narrowed build_ignore) without the example plugins
+            data: -d ci_platform=both -d include_unit_tests=true
+            scenario: default
           - name: release          # both release tracks: github (Galaxy publish) + forgejo + antsibull changelogs/ (yamllints both release.yml; changelog sanity runs in smoke-collection)
             data: -d ci_platform=both -d collection_forgejo_release=true
             scenario: default
@@ -248,15 +251,31 @@ jobs:
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run ansible-lint
 
+      # The wiring alone, with no tests yet: tests/unit/ exists, so ansible-test skips
+      # rather than failing.
+      - name: make units (unit-tests)
+        if: matrix.name == 'unit-tests'
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: make units
+
   update-collection:
     # Same as update-role, for collections: generate a collection at the fork point with the
     # target branch, update it to HEAD, assert a clean three-way merge (no .rej), and re-lint.
     # Covers the copier-update path that lint-collection alone doesn't. fetch-depth:0 so copier
-    # can resolve base + HEAD.
+    # can resolve base + HEAD. 'enable-unit-tests' turns the units wiring on with the update,
+    # as an existing collection with plugins of its own does.
     needs: resolve-image
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.resolve-image.outputs.builder }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: defaults
+            update_data: ""
+          - name: enable-unit-tests
+            update_data: -d include_unit_tests=true
     steps:
       - uses: actions/checkout@v5
         with:
@@ -290,7 +309,7 @@ jobs:
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         # Use the scaffold venv's copier (the collection's own env has no copier); CWD stays the collection.
         run: |
-          "${{ github.workspace }}/.venv/bin/copier" update --defaults --trust --vcs-ref=HEAD
+          "${{ github.workspace }}/.venv/bin/copier" update --defaults --trust --vcs-ref=HEAD ${{ matrix.update_data }}
       - name: Assert clean merge (no .rej)
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: |
@@ -309,6 +328,10 @@ jobs:
           make deps   # installs the right scenario's collections.yml (default else vagrant)
           uv run yamllint .
           uv run ansible-lint
+      - name: make units (enable-unit-tests)
+        if: matrix.name == 'enable-unit-tests'
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: make units
 
   smoke-role:
     # End-to-end docker scenario on the default-answers role. Runs on PRs too: the docker

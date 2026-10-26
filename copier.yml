@@ -269,6 +269,18 @@ include_plugins:
     built artifact ships tests/ (unit tests + sanity ignores), excluding only tests/output.
   default: false
 
+# The `ansible-test units` wiring on its own (a `units` Make target, a CI job, galaxy.yml
+# shipping tests/), for a collection with plugins of its own but not the examples.
+# include_plugins implies it: then it isn't asked and takes include_plugins' value.
+include_unit_tests:
+  type: bool
+  when: "{{ kind == 'collection' and not include_plugins }}"
+  help: >-
+    Wire `ansible-test units` (a `units` Make target + CI job) for unit tests of your own
+    plugins under tests/unit/, without the example plugins? When on, the built artifact
+    ships tests/ (unit tests + sanity ignores), excluding only tests/output.
+  default: "{{ include_plugins }}"
+
 collection_release:
   type: bool
   when: "{{ kind == 'collection' and ci_platform in ['github', 'both'] }}"

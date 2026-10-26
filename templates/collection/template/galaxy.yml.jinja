@@ -40,13 +40,13 @@ build_ignore:
   - .ansible
   - .copier-answers.yml
   - extensions
-{% if include_plugins %}
-  # Plugins present: ship tests/ (unit tests + any sanity ignore files) so consumers can
+{% if include_unit_tests %}
+  # Unit tests wired: ship tests/ (unit tests + any sanity ignore files) so consumers can
   # run them; exclude only the generated ansible-test output.
   - tests/output
 {% else %}
   # roles-only collection ships nothing under tests/; it only ever holds the generated
-  # ansible-test `tests/output/` artifact. Narrow this to tests/output if you add plugins.
+  # ansible-test `tests/output/` artifact. include_unit_tests narrows this to tests/output.
   - tests
 {% endif %}
   - pyproject.toml
