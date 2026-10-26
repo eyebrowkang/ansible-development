@@ -1,6 +1,7 @@
 ---
 # Verify the role's effects from the OUTSIDE — assert the target's REAL state (files on
-# disk, `systemctl is-active`, a listening port), not a module's own "changed"/"ok" report.
+# disk, the service state systemd reports, a listening port), not a module's own
+# "changed"/"ok" report.
 # A verify that re-runs the role's modules and trusts their return value is circular; read
 # the actual state with stat/slurp/command/service_facts and assert on that.
 # See docs/molecule-testing.md for the full pattern (and testinfra as an alternative).
@@ -34,11 +35,16 @@
         success_msg: "{{ namespace }}.{{ collection_name }}.example verified from the target's real state"
 
     # When your role does more, assert ground truth — copy & adapt (each reads the SYSTEM,
-    # never a module's self-report). Reach for `command` where only the system knows:
+    # never a module's self-report). Reach for `command` only where no module reads it:
     #
-    #   - name: Service really running per systemd (not "the service module returned ok")
-    #     ansible.builtin.command: systemctl is-active --quiet foo
-    #     changed_when: false
+    #   - name: Read the services as systemd reports them (not "the service module returned ok")
+    #     ansible.builtin.service_facts:
+    #
+    #   - name: Assert the service really runs and is enabled
+    #     ansible.builtin.assert:
+    #       that:
+    #         - ansible_facts.services['foo.service'].state == 'running'
+    #         - ansible_facts.services['foo.service'].status == 'enabled'
     #
     #   - name: Port actually listening
     #     ansible.builtin.wait_for: { port: 8080, timeout: 5 }

@@ -37,12 +37,17 @@ dependency → destroy → syntax → create → converge → idempotence → ve
     that: [marker.stat.exists, marker.stat.mode == "0644"]
 ```
 
-**关键原则**：verify 读系统的真相（文件内容、`systemctl is-active`、监听端口、二进制 `--version`），**不要**复跑 role 的模块再信它的 `changed/ok` 返回——那是循环论证。当模块只能"自报"、只有系统知道真相时（服务是否真在跑、端口是否真在听），就用 `command`：
+**关键原则**：verify 读系统的真相（文件内容、systemd 报告的服务状态、监听端口、二进制 `--version`），**不要**复跑 role 的模块再信它的 `changed/ok` 返回——那是循环论证。服务是否真在跑，读 systemd 自己的状态（`service_facts`）；`command: systemctl is-active` 也能读，但会触发 ansible-lint 的 `command-instead-of-module`：
 
 ```yaml
-- ansible.builtin.command: systemctl is-active --quiet foo
-  changed_when: false
+- ansible.builtin.service_facts:
+- ansible.builtin.assert:
+    that:
+      - ansible_facts.services['foo.service'].state == 'running'
+      - ansible_facts.services['foo.service'].status == 'enabled'
 ```
+
+只有系统知道的其他事实（二进制报告的版本之类），没有对应模块时再用 `command`。
 
 `verify.yml` 里已附了这些模式的注释示例，取消注释改成你的即可。
 
