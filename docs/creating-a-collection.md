@@ -30,8 +30,8 @@ copier 会询问（collection 相关）：
 外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`forgejo_url`、`forgejo_runner_label`、`builder_*`，含义见 [creating-a-role.md](creating-a-role.md)。
 
 - `galaxy.yml` 的 `repository`/`homepage`/`issues`：纯 forgejo 时指向 `<forgejo_url>/<namespace>/ansible-collection-<name>`，含 github 时指向 GitHub。
-- 示例 role 的变量用 `<collection>_<role>_` 前缀（如 `testcoll_example_marker_path`）：Ansible 变量是一个扁平的命名空间，裸的 `<role>_` 前缀（`example_`、`install_`）在 inventory 里看不出属于谁，也会和别的 collection 的同名 role 冲突。ansible-lint 的 `var-naming[no-role-prefix]` 要求裸 role 名前缀，所以 collection 的 `.ansible-lint` 跳过这条规则（role 的不跳过）。代价是整条规则一起关掉：collection 里 role 的变量写成什么样 lint 都不再报错，连完全不带前缀的也一样，`<collection>_<role>_` 只能靠自觉。
-- `min_ansible_version` 高于 2.19 时，collection 的 `.ansible-lint` 自动带 `supported_ansible_also`：ansible-lint 的 meta-runtime 规则只认到 2.19，而且只检查 `meta/runtime.yml` 的 `requires_ansible`，所以 role 不需要。collection 内的 role 名本身用短名（`install`、`config`），FQCN 已经带了 collection 名。
+- 示例 role 的变量用 `<collection>_<role>_` 前缀（如 `testcoll_example_marker_path`）：Ansible 变量是一个扁平的命名空间，裸的 `<role>_` 前缀（`example_`、`install_`）在 inventory 里看不出属于谁，也会和别的 collection 的同名 role 冲突。ansible-lint 的 `var-naming[no-role-prefix]` 要求裸 role 名前缀，所以 collection 的 `.ansible-lint` 跳过这条规则（role 的不跳过）。代价是整条规则一起关掉：collection 里 role 的变量写成什么样 lint 都不再报错，连完全不带前缀的也一样，`<collection>_<role>_` 只能靠自觉。collection 内的 role 名本身用短名（`install`、`config`），FQCN 已经带了 collection 名。
+- `min_ansible_version` 高于 2.19 时，collection 的 `.ansible-lint` 自动带 `supported_ansible_also`：ansible-lint 的 meta-runtime 规则只认到 2.19，而且只检查 `meta/runtime.yml` 的 `requires_ansible`，所以 role 不需要。
 
 > **molecule 场景开关（`include_docker` / `include_vagrant`）**：与 role 共享。`include_docker`（默认开）生成 `extensions/molecule/default/`（docker，example role）；`include_vagrant`（默认开）生成 `extensions/molecule/vagrant/`（vagrant+libvirt，靠短名解析 example role）。两者至少开一个，否则 copier 校验报错。
 
@@ -104,7 +104,9 @@ collection 有自己的插件、不想要示例时，`include_plugins` 保持关
 uvx copier update --trust --defaults -d include_unit_tests=true
 ```
 
-之后 `.copier-answers.yml` 记下 `include_unit_tests: true`，后续 update 会一直维护这些接线，不必在本地手工保留。脚手架自测的 `update-collection` 有一个 `enable-unit-tests` 变体专门覆盖这条路径。
+之后 `.copier-answers.yml` 记下 `include_unit_tests: true`，后续 update 会一直维护这些接线，不必在本地手工保留。
+
+开着 `include_plugins` 的 collection 以后要关掉它、但保留单测接线时，update 要同时带 `-d include_plugins=false -d include_unit_tests=true`：开着插件时 `include_unit_tests` 不被询问、也不记进答案文件，关掉后它第一次被询问，默认值随 `include_plugins` 已是 false，单用 `--defaults` 会把接线删掉。脚手架自测的 `update-collection` 有一个 `enable-unit-tests` 变体专门覆盖这条路径。
 
 ## 发布自动化（antsibull-changelog）
 

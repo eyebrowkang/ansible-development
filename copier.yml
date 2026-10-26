@@ -271,9 +271,11 @@ include_plugins:
 
 # The `ansible-test units` wiring on its own (a `units` Make target, a CI job, galaxy.yml
 # shipping tests/), for a collection with plugins of its own but not the examples.
-# include_plugins implies it: then it isn't asked, and the templates test
-# `include_plugins or include_unit_tests`, so contradicting -d answers (or turning
-# include_plugins off later with --defaults) can't drop the wiring from under the plugins.
+# include_plugins implies it: then it isn't asked (nor recorded), and the templates test
+# `include_plugins or include_unit_tests`, so contradicting -d answers can't drop the wiring
+# from under the plugins. Turning include_plugins off later asks it for the first time, with
+# include_plugins' new value (false) as the default: pass -d include_unit_tests=true then
+# (docs/creating-a-collection.md).
 include_unit_tests:
   type: bool
   when: "{{ kind == 'collection' and not include_plugins }}"

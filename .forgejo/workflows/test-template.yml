@@ -180,7 +180,8 @@ jobs:
           rej="$(git ls-files --others --exclude-standard | grep '\.rej$' || true)"
           if [ -n "$rej" ]; then echo "copier update produced conflicts:"; echo "$rej"; exit 1; fi
           # copier's default --conflict inline writes markers into the files, no .rej.
-          markers="$(git grep -lE '^(<<<<<<<|>>>>>>>) ' -- . ; git ls-files --others --exclude-standard -z | xargs -0 -r grep -lE '^(<<<<<<<|>>>>>>>) ' || true)"
+          # Each part may find nothing (exit 1): || true on both, for sh -e (dash) too.
+          markers="$({ git grep -lE '^(<<<<<<<|>>>>>>>) ' -- . || true; }; { git ls-files --others --exclude-standard -z | xargs -0 -r grep -lE '^(<<<<<<<|>>>>>>>) ' || true; })"
           if [ -n "$markers" ]; then echo "copier update left conflict markers in:"; echo "$markers"; exit 1; fi
           echo "no .rej, no conflict markers — update merged cleanly"
       - name: Commit the update (so lint collects every file via git)
@@ -330,7 +331,8 @@ jobs:
           rej="$(git ls-files --others --exclude-standard | grep '\.rej$' || true)"
           if [ -n "$rej" ]; then echo "copier update produced conflicts:"; echo "$rej"; exit 1; fi
           # copier's default --conflict inline writes markers into the files, no .rej.
-          markers="$(git grep -lE '^(<<<<<<<|>>>>>>>) ' -- . ; git ls-files --others --exclude-standard -z | xargs -0 -r grep -lE '^(<<<<<<<|>>>>>>>) ' || true)"
+          # Each part may find nothing (exit 1): || true on both, for sh -e (dash) too.
+          markers="$({ git grep -lE '^(<<<<<<<|>>>>>>>) ' -- . || true; }; { git ls-files --others --exclude-standard -z | xargs -0 -r grep -lE '^(<<<<<<<|>>>>>>>) ' || true; })"
           if [ -n "$markers" ]; then echo "copier update left conflict markers in:"; echo "$markers"; exit 1; fi
           echo "no .rej, no conflict markers — update merged cleanly"
       - name: Commit the update (so lint collects every file via git)

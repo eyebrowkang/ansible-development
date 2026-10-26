@@ -19,6 +19,6 @@ supported_ansible_also:
 skip_list:
   # The rule wants each role's variables prefixed with the bare role name, but variables
   # share one namespace across collections: they're prefixed <collection>_<role>_
-  # ({{ collection_name }}_<role>_*). Skipping it checks no prefix at all: keep to the
-  # convention by hand.
+  # ({{ collection_name }}_<role>_*).
+  # Skipping it checks no prefix at all: keep to the convention by hand.
   - var-naming[no-role-prefix]
