@@ -22,7 +22,8 @@ copier 会询问（collection 相关）：
 | `collection_description` | 一行描述 |
 | `collection_dependencies` | galaxy.yml 的 `dependencies`（`name: version` 映射） |
 | `collection_tags` | galaxy.yml tags——**必须含一个 Galaxy 命名 tag**（`tools`/`infrastructure`/`linux`…），否则 ansible-lint 的 `galaxy[tags]` 报错 |
-| `include_plugins` | 是否脚手架示例插件（一个 filter + 一个 module，共享 `module_utils`）+ 单测，并打开 `ansible-test units`（默认关；关时 collection 保持 roles-only） |
+| `include_plugins` | 是否脚手架示例插件（一个 filter + 一个 module，共享 `module_utils`）+ 单测，并打开 `ansible-test units`（默认关；关时 collection 保持 roles-only）。开启时隐含 `include_unit_tests` |
+| `include_unit_tests` | （仅 `include_plugins` 关时问；默认关）只接 `ansible-test units`，不要示例插件：`units` Make target、CI 的 `units` job、空的 `tests/unit/`（`.gitkeep`）、`build_ignore` 从 `tests` 收窄到 `tests/output`。给有自己插件的 collection |
 | `collection_release` | （仅 `ci_platform` 含 github 时问）GitHub→Galaxy 发布：本地 bump+changelog+commit 后 push 裸 SemVer tag（如 `0.2.0`，不带 `v`）→ workflow 校验并构建该不可变 tag、`ansible-galaxy collection publish` 到 Galaxy + 建 GitHub release。需 `GALAXY_API_KEY` secret |
 | `collection_forgejo_release` | （仅 `ci_platform` 含 forgejo 时问；纯 forgejo 默认开，`both` 默认关）Forgejo tag 驱动发布：本地 bump+changelog+commit 后 push 裸 SemVer tag → workflow 校验并构建该不可变 tag + 建 Forgejo release 附 tarball（不发 Galaxy） |
 
@@ -59,14 +60,14 @@ make test        # molecule（example role）
 | `pyproject.toml` + `Makefile` | uv 工具链 + 本地 target |
 | `renovate.json` | Renovate 依赖更新（`dependency_updates` 时，默认开；uv + Actions，与 role 同一套配置、平台无关——见 [creating-a-role.md](creating-a-role.md) 的「依赖更新自动化（Renovate）」一节） |
 | `plugins/`（`include_plugins` 时） | 示例 filter（`filter/to_upper.py`）+ module（`modules/example_fact.py`）+ 共享 `module_utils/greeting.py`。module 带 GPLv3 头（ansible 约定，`validate-modules` 强制，与 collection 自身 license 无关），author 写成 `name (@handle)` 以过 doc 校验 |
-| `tests/unit/`（`include_plugins` 时） | filter 与 module_utils 的单测，`ansible-test units` 跑；`galaxy.yml` 的 `build_ignore` 同时从 `tests` 收窄到 `tests/output`，让单测 + sanity ignore 进 Galaxy artifact |
+| `tests/unit/`（`include_unit_tests` 时） | `ansible-test units` 跑的单测：`include_plugins` 时是 filter 与 module_utils 的示例单测，否则只有一个 `.gitkeep`（目录不存在时 `ansible-test units` 直接报错，空目录则跳过）；`galaxy.yml` 的 `build_ignore` 同时从 `tests` 收窄到 `tests/output`，让单测 + sanity ignore 进 Galaxy artifact |
 
 ## 两类测试
 
 - **`make sanity`** = `ansible-test sanity --venv`。用 `--venv`（不是 `--docker`）：sanity 各测试在独立 venv 里跑，**不需 docker**，因此在 Forgejo DooD runner 上也不会踩 "兄弟容器 bind-mount 挂到宿主路径" 的坑。慢但全面，是 Galaxy 的标准门禁。
 - **`make test`** = molecule 跑 `roles/example`（docker 场景，`include_docker` 时）。场景在 collection 根的 `extensions/molecule/`，`converge.yml` 用**短名** `roles: [example]`，靠 `molecule.yml` 里的 `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` 解析——这样 molecule 的 create/destroy playbook 不会被 ansible-lint 当成 role 内容（否则 `var-naming[no-role-prefix]` 误报）。
 - **`make test-vm`** = molecule 跑 vagrant 场景（`include_vagrant` 时；需 `uv sync --group vagrant` + libvirt/KVM）。同 standalone role 走 molecule-plugins#301 的 `ANSIBLE_LIBRARY`/`ANSIBLE_FILTER_PLUGINS` 变通，见 [molecule-301-workaround.md](molecule-301-workaround.md)。
-- **`make units`** = `ansible-test units --venv`（仅 `include_plugins` 时生成）。跑 `tests/unit/` 下 filter 与 module_utils 的单测，无需 docker。CI 里 forgejo `lint.yml` / github `ci.yml` 都有对应 `units` job，脚手架自测的 `smoke-collection-plugins` 还会连 sanity 一起跑。
+- **`make units`** = `ansible-test units --venv`（`include_unit_tests` 时生成，`include_plugins` 隐含它）。跑 `tests/unit/` 下的单测，无需 docker。新加的测试文件要先 `git add`：`ansible-test` 经 git 收集目标，未跟踪的测试会被静默跳过。CI 里 forgejo `lint.yml` / github `ci.yml` 都有对应 `units` job，脚手架自测的 `smoke-collection-plugins` 还会连 sanity 一起跑。
 
 ## CI
 
@@ -90,6 +91,16 @@ uvx copier update --trust --defaults
 - `tests/unit/plugins/`——`filter` 与 `module_utils` 的单测，导入用全限定路径 `ansible_collections.<ns>.<name>.plugins.…`，`ansible-test units --venv` 跑（`make units`）。
 - module 的两个 ansible 约定坑：**GPLv3 头**（`validate-modules` 强制，所有 ansible module 都要，跟 collection 自身 license 无关），**author 写成 `name (@handle)`**（否则 `ansible-doc`/`validate-modules` 报 author 格式错）——模板都已处理，示例插件能直接过 `make sanity` + `make units`，无需任何 `tests/sanity/ignore-*.txt`。
 - 打开后 `galaxy.yml` 的 `build_ignore` 从 `tests` 收窄到 `tests/output`：单测 + 将来你加的 sanity ignore 文件会进 Galaxy artifact，只排除 `ansible-test` 的生成输出。
+
+### 只要单测接线（`include_unit_tests`）
+
+collection 有自己的插件、不想要示例时，`include_plugins` 保持关，打开 `include_unit_tests`：只生成接线（`units` target、CI job、`tests/unit/.gitkeep`、收窄的 `build_ignore`），不生成示例插件和示例单测。已有的 collection 用一次 update 打开它：
+
+```bash
+uvx copier update --trust --defaults -d include_unit_tests=true
+```
+
+之后 `.copier-answers.yml` 记下 `include_unit_tests: true`，后续 update 会一直维护这些接线，不必在本地手工保留。脚手架自测的 `update-collection` 有一个 `enable-unit-tests` 变体专门覆盖这条路径。
 
 ## 发布自动化（antsibull-changelog）
 
