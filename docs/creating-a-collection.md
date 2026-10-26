@@ -104,9 +104,9 @@ collection 有自己的插件、不想要示例时，`include_plugins` 保持关
 uvx copier update --trust --defaults -d include_unit_tests=true
 ```
 
-之后 `.copier-answers.yml` 记下 `include_unit_tests: true`，后续 update 会一直维护这些接线，不必在本地手工保留。
+之后 `.copier-answers.yml` 记下 `include_unit_tests: true`，后续 update 会一直维护这些接线，不必在本地手工保留。脚手架自测的 `update-collection` 有一个 `enable-unit-tests` 变体专门覆盖这条路径。
 
-开着 `include_plugins` 的 collection 以后要关掉它、但保留单测接线时，update 要同时带 `-d include_plugins=false -d include_unit_tests=true`：开着插件时 `include_unit_tests` 不被询问、也不记进答案文件，关掉后它第一次被询问，默认值随 `include_plugins` 已是 false，单用 `--defaults` 会把接线删掉。脚手架自测的 `update-collection` 有一个 `enable-unit-tests` 变体专门覆盖这条路径。
+开着 `include_plugins` 的 collection 以后要关掉它、但保留单测接线时，update 要同时带 `-d include_plugins=false -d include_unit_tests=true`：开着插件时 `include_unit_tests` 不被询问、也不记进答案文件，关掉后它第一次被询问，默认值随 `include_plugins` 已是 false，单用 `--defaults` 会把接线删掉。
 
 ## 发布自动化（antsibull-changelog）
 
