@@ -41,7 +41,7 @@ next update.
 
 | `_shared/` file              | role symlink                                                              | collection symlink                                                                       |
 | ---------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `.ansible-lint.jinja`        | `role/template/.ansible-lint.jinja`                                      | — (own copy: adds the `var-naming[no-role-prefix]` skip)                                 |
+| `.ansible-lint.jinja`        | `role/template/.ansible-lint.jinja`                                      | — (own copy: the shared file, then a `var-naming[no-role-prefix]` skip; the self-test checks the shared part stays equal) |
 | `.copier-answers.yml.jinja`  | `role/template/.copier-answers.yml.jinja`                               | `collection/template/.copier-answers.yml.jinja`                                          |
 | `.pre-commit-config.yaml`    | `role/template/.pre-commit-config.yaml`                                 | `collection/template/.pre-commit-config.yaml`                                            |
 | `.python-version`            | `role/template/.python-version`                                          | `collection/template/.python-version`                                                    |
@@ -61,9 +61,9 @@ branches inside a shared file.
 a real copy and edit it. The other kind keeps its symlink; the shared file stays.
 
 ```bash
-# e.g. the collection needs a different .ansible-lint
-rm "templates/collection/template/.ansible-lint"
-cp "templates/_shared/.ansible-lint" "templates/collection/template/.ansible-lint"
+# e.g. the collection needs a different .python-version
+rm "templates/collection/template/.python-version"
+cp "templates/_shared/.python-version" "templates/collection/template/.python-version"
 # …now edit the collection copy. Role still symlinks to _shared/.
 ```
 
@@ -72,10 +72,10 @@ cp "templates/_shared/.ansible-lint" "templates/collection/template/.ansible-lin
 ```bash
 for k in role collection; do
   sub="templates/$k/template"
-  rm "$sub/.ansible-lint"
-  cp "templates/_shared/.ansible-lint" "$sub/.ansible-lint"
+  rm "$sub/.python-version"
+  cp "templates/_shared/.python-version" "$sub/.python-version"
 done
-git rm "templates/_shared/.ansible-lint"   # and remove its row from the table above
+git rm "templates/_shared/.python-version"   # and remove its row from the table above
 ```
 
 For a conditional-name file, recreate the real file under the **Jinja path name**

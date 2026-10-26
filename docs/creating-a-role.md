@@ -18,7 +18,7 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 |------|------|
 | `role_name` | 小写，作为 Galaxy role_name |
 | `namespace` | Galaxy 命名空间 / 作者 |
-| `min_ansible_version` | 写入 meta/main.yml（默认 `2.21.0`；role 须 ≥ 2.17.0；高于 2.19 时 `.ansible-lint` 自动带 `supported_ansible_also`） |
+| `min_ansible_version` | 写入 meta/main.yml（默认 `2.21.0`；role 须 ≥ 2.17.0，且不高于开发工具链的 2.21.x；高于 2.19 时 `.ansible-lint` 自动带 `supported_ansible_also`） |
 | `galaxy_collections` | 依赖的 collection |
 | `license` | meta 里记录的 SPDX id |
 | `ci_platform` | github / forgejo / both |

@@ -28,7 +28,8 @@ Managed with [copier](https://copier.readthedocs.io/) + [uv](https://docs.astral
 uv sync          # install dev toolchain
 make lint        # yamllint + ansible-lint
 make sanity      # ansible-test sanity (--venv)
-{% if include_docker %}make test        # molecule test for the example role (docker)
+{% if include_unit_tests %}make units       # ansible-test units (--venv)
+{% endif %}{% if include_docker %}make test        # molecule test for the example role (docker)
 {% endif %}{% if include_vagrant %}make test-vm     # molecule test for the example role (vagrant; needs KVM)
 {% endif %}```
 

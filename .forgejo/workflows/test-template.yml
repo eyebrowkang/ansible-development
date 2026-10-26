@@ -196,8 +196,9 @@ jobs:
   lint-collection:
     # Generate a collection and lint it across answer variants. Rendered under an
     # ansible_collections/<ns>/<name> path so ansible-lint stays collection-aware.
-    # 'defaults' = docker-only (collection vagrant defaults off); 'vagrant-only' exercises
-    # include_docker=false + the new extensions/molecule/vagrant scenario.
+    # 'defaults' = docker + vagrant scenarios; 'vagrant-only' exercises include_docker=false
+    # (plus a 2.19.0 floor: .ansible-lint without supported_ansible_also); 'forgejo' lints a
+    # pure-forgejo collection (galaxy.yml links on forgejo_url).
     needs: resolve-image
     runs-on: ubuntu-latest
     container:
@@ -210,8 +211,11 @@ jobs:
             data: -d ci_platform=both
             scenario: default
           - name: vagrant-only
-            data: -d ci_platform=both -d include_docker=false -d include_vagrant=true
+            data: -d ci_platform=both -d include_docker=false -d include_vagrant=true -d min_ansible_version=2.19.0
             scenario: vagrant
+          - name: forgejo
+            data: -d ci_platform=forgejo -d forgejo_url=https://git.example.org -d forgejo_runner_label=example-runner
+            scenario: default
           - name: adversarial      # quotes/colons in free-text — locks the | tojson escaping invariant
             data: "-d ci_platform=both -d 'author=a:b \"c\"' -d 'collection_description=a \"b\": c'"
             scenario: default
@@ -226,6 +230,13 @@ jobs:
             scenario: default
     steps:
       - uses: actions/checkout@v5
+      # The collection's .ansible-lint.jinja is the shared one plus its var-naming skip.
+      - name: Collection .ansible-lint starts with the shared one
+        if: matrix.name == 'defaults'
+        shell: bash
+        run: |
+          shared=templates/_shared/.ansible-lint.jinja
+          cmp "$shared" <(head -n "$(wc -l < "$shared")" templates/collection/template/.ansible-lint.jinja)
       - name: Install scaffold toolchain (copier)
         run: uv sync
       - name: Generate collection (${{ matrix.name }})
