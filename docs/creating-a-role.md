@@ -18,7 +18,7 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 |------|------|
 | `role_name` | 小写，作为 Galaxy role_name |
 | `namespace` | Galaxy 命名空间 / 作者 |
-| `min_ansible_version` | 写入 meta/main.yml（默认 `2.21.0`；role 须 ≥ 2.17.0，且不高于开发工具链的 2.21.x；高于 2.19 时 `.ansible-lint` 自动带 `supported_ansible_also`） |
+| `min_ansible_version` | 写入 meta/main.yml（默认 `2.21.0`；role 须 ≥ 2.17.0，且不高于开发工具链的 2.21.x） |
 | `galaxy_collections` | 依赖的 collection |
 | `license` | meta 里记录的 SPDX id |
 | `ci_platform` | github / forgejo / both |
@@ -56,7 +56,7 @@ cd roles/<namespace>.<name>
 uvx copier update --trust --defaults    # 要求 role 是干净的 git 仓库
 ```
 
-**完整通用流程**（前提、开分支、查 `.rej`、验证、提 PR、会改动什么）见 [用 copier update 拉取模板更新](updating-from-template.md)。
+**完整通用流程**（前提、开分支、查冲突标记、验证、提 PR、会改动什么）见 [用 copier update 拉取模板更新](updating-from-template.md)。
 
 > `kind` 默认 `role`，所以不必显式带 `-d kind=role`。生成 collection 见 [creating-a-collection.md](creating-a-collection.md)。
 

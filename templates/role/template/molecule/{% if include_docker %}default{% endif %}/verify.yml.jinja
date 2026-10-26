@@ -43,6 +43,7 @@
     #   - name: Assert the service really runs and is enabled
     #     ansible.builtin.assert:
     #       that:
+    #         - "'foo.service' in ansible_facts.services"
     #         - ansible_facts.services['foo.service'].state == 'running'
     #         - ansible_facts.services['foo.service'].status == 'enabled'
     #

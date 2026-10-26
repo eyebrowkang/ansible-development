@@ -174,12 +174,15 @@ jobs:
         # Use the scaffold venv's copier (the role's own env has no copier); CWD stays the role.
         run: |
           "${{ github.workspace }}/.venv/bin/copier" update --defaults --trust --vcs-ref=HEAD
-      - name: Assert clean merge (no .rej)
+      - name: Assert clean merge (no .rej, no conflict markers)
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
           rej="$(git ls-files --others --exclude-standard | grep '\.rej$' || true)"
           if [ -n "$rej" ]; then echo "copier update produced conflicts:"; echo "$rej"; exit 1; fi
-          echo "no .rej — update merged cleanly"
+          # copier's default --conflict inline writes markers into the files, no .rej.
+          markers="$(git grep -lE '^(<<<<<<<|>>>>>>>) ' -- . ; git ls-files --others --exclude-standard -z | xargs -0 -r grep -lE '^(<<<<<<<|>>>>>>>) ' || true)"
+          if [ -n "$markers" ]; then echo "copier update left conflict markers in:"; echo "$markers"; exit 1; fi
+          echo "no .rej, no conflict markers — update merged cleanly"
       - name: Commit the update (so lint collects every file via git)
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
@@ -235,7 +238,7 @@ jobs:
         if: matrix.name == 'defaults'
         shell: bash
         run: |
-          shared=templates/_shared/.ansible-lint.jinja
+          shared=templates/_shared/.ansible-lint
           cmp "$shared" <(head -n "$(wc -l < "$shared")" templates/collection/template/.ansible-lint.jinja)
       - name: Install scaffold toolchain (copier)
         run: uv sync
@@ -321,12 +324,15 @@ jobs:
         # Use the scaffold venv's copier (the collection's own env has no copier); CWD stays the collection.
         run: |
           "${{ github.workspace }}/.venv/bin/copier" update --defaults --trust --vcs-ref=HEAD ${{ matrix.update_data }}
-      - name: Assert clean merge (no .rej)
+      - name: Assert clean merge (no .rej, no conflict markers)
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: |
           rej="$(git ls-files --others --exclude-standard | grep '\.rej$' || true)"
           if [ -n "$rej" ]; then echo "copier update produced conflicts:"; echo "$rej"; exit 1; fi
-          echo "no .rej — update merged cleanly"
+          # copier's default --conflict inline writes markers into the files, no .rej.
+          markers="$(git grep -lE '^(<<<<<<<|>>>>>>>) ' -- . ; git ls-files --others --exclude-standard -z | xargs -0 -r grep -lE '^(<<<<<<<|>>>>>>>) ' || true)"
+          if [ -n "$markers" ]; then echo "copier update left conflict markers in:"; echo "$markers"; exit 1; fi
+          echo "no .rej, no conflict markers — update merged cleanly"
       - name: Commit the update (so lint collects every file via git)
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: |

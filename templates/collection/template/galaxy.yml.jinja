@@ -41,7 +41,7 @@ build_ignore:
   - .ansible
   - .copier-answers.yml
   - extensions
-{% if include_unit_tests %}
+{% if include_plugins or include_unit_tests %}
   # Unit tests wired: ship tests/ (unit tests + any sanity ignore files) so consumers can
   # run them; exclude only the generated ansible-test output.
   - tests/output

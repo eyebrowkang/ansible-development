@@ -10,8 +10,8 @@ exclude_paths:
   - tests/output/
 {% set _v = min_ansible_version.split('.') | map('int') | list %}{% if _v > [2, 19, 0] %}
 
-# ansible-lint's meta-runtime rule only knows ansible-core releases up to 2.19;
-# min_ansible_version declares {{ _v[0] }}.{{ _v[1] }}.
+# ansible-lint's meta-runtime rule (meta/runtime.yml's requires_ansible) only knows
+# ansible-core releases up to 2.19; min_ansible_version declares {{ _v[0] }}.{{ _v[1] }}.
 supported_ansible_also:
   - "{{ _v[0] }}.{{ _v[1] }}."
 {% endif %}
@@ -19,5 +19,6 @@ supported_ansible_also:
 skip_list:
   # The rule wants each role's variables prefixed with the bare role name, but variables
   # share one namespace across collections: they're prefixed <collection>_<role>_
-  # ({{ collection_name }}_<role>_*).
+  # ({{ collection_name }}_<role>_*). Skipping it checks no prefix at all: keep to the
+  # convention by hand.
   - var-naming[no-role-prefix]

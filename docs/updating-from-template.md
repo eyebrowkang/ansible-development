@@ -25,7 +25,7 @@ uvx copier update --trust --defaults
 然后查冲突、验证、提交：
 
 ```bash
-find . -name '*.rej'          # 期望无输出；有冲突就手动解决这些 .rej 再删掉
+git grep -nE '^(<<<<<<<|>>>>>>>) '   # 期望无输出：冲突默认以标记写进文件（--conflict inline），不生成 .rej
 git diff                      # review；确认 .copier-answers.yml 的 _commit 升到了新版本
 uv sync && make lint          # collection 再加 make sanity；都要绿
 make test                     # docker molecule（可选，保险）
@@ -38,12 +38,13 @@ git push -u origin <branch>
 ## 会改动什么
 
 - diff 取决于**自 `_commit` 记录的版本以来模板改了哪些文件**——这是模板可持续回填、选 copier 而非 cookiecutter 的核心价值。
-- 你定制过的文件（业务逻辑、被你改过的 `meta` / CI 等）走三方合并：模板没动的地方**保留你的改动**；只有“模板动了、你也动了同一处”才出 `.rej`。
+- 你定制过的文件（业务逻辑、被你改过的 `meta` / CI 等）走三方合并：模板没动的地方**保留你的改动**；只有“模板动了、你也动了同一处”才出冲突。copier 默认 `--conflict inline`：冲突以 `<<<<<<<` / `>>>>>>>` 标记写进文件本身，**不会生成 `.rej`**（加 `--conflict rej` 才会）。YAML 里的标记后面的 lint 能抓到，Makefile、README、`.md` 里的抓不到，所以一定要 grep。
+- 解决冲突的通用规则：交给模板维护的内容（新开关接进来的接线、模板改了写法的配置）取模板一侧；你自己的内容（改写过的示例、业务相关的文字）保留自己一侧。每个版本发布说明的 Upgrade Notes 会列出该版本容易冲突的文件。
 - 同版本（`_commit` 已是最新 tag）跑就是干净 **no-op**。
 - 某个改进若你之前已**手动对齐**过（手改正好和新模板一致），那次 update 的 diff 会很小甚至为空——正常。
 
 ## 注意点
 
-- **别手改 `.copier-answers.yml`**（除非有意改 `_src_path` / `_commit`）——它由 copier 维护。
+- **别手改 `.copier-answers.yml`**（除非有意改 `_src_path` / `_commit`，或发布说明里写明的一次性例外）——它由 copier 维护。改答案用 update 时的 `-d name=value`。
 - **网络**：update 会 clone `_src_path`（远程脚手架仓库）；慢或失败就重试。
-- 脚手架自测（`.forgejo/workflows/test-template.yml` 的 `update-role` / `update-collection`）正是跑这套：在 PR base 生成 → update 到 HEAD → 断言无 `.rej` → 重新 lint。
+- 脚手架自测（`.forgejo/workflows/test-template.yml` 的 `update-role` / `update-collection`）正是跑这套：在 PR base 生成 → update 到 HEAD → 断言无 `.rej`、无冲突标记 → 重新 lint。

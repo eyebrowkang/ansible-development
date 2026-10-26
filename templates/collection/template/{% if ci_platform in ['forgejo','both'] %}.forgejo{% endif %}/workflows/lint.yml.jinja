@@ -31,7 +31,7 @@ jobs:
       - run: uv sync
       - name: ansible-test sanity
         run: uv run ansible-test sanity --venv --color
-{% if include_unit_tests %}
+{% if include_plugins or include_unit_tests %}
 
   units:
     runs-on: {{ forgejo_runner_label }}

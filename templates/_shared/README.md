@@ -41,7 +41,7 @@ next update.
 
 | `_shared/` file              | role symlink                                                              | collection symlink                                                                       |
 | ---------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `.ansible-lint.jinja`        | `role/template/.ansible-lint.jinja`                                      | — (own copy: the shared file, then a `var-naming[no-role-prefix]` skip; the self-test checks the shared part stays equal) |
+| `.ansible-lint`              | `role/template/.ansible-lint`                                            | — (own `.ansible-lint.jinja`: this file, then `supported_ansible_also` above 2.19 and the `var-naming[no-role-prefix]` skip; the self-test checks the head stays equal) |
 | `.copier-answers.yml.jinja`  | `role/template/.copier-answers.yml.jinja`                               | `collection/template/.copier-answers.yml.jinja`                                          |
 | `.pre-commit-config.yaml`    | `role/template/.pre-commit-config.yaml`                                 | `collection/template/.pre-commit-config.yaml`                                            |
 | `.python-version`            | `role/template/.python-version`                                          | `collection/template/.python-version`                                                    |
