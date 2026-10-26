@@ -10,7 +10,7 @@ jobs:
   docker:
     # Container job; the Forgejo runner's automounted docker.sock (DooD) lets molecule
     # create the instance on the host daemon. systemd config lives in molecule.yml.
-    runs-on: ubuntu-latest
+    runs-on: {{ forgejo_runner_label }}
     container:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
@@ -31,7 +31,7 @@ jobs:
     # docker daemon) both jobs create the same-named molecule instances, so concurrent runs
     # clobber each other's containers (OCI setns exec failed / UNREACHABLE). `needs` serializes.
     needs: docker
-    runs-on: ubuntu-latest
+    runs-on: {{ forgejo_runner_label }}
     container:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
@@ -41,7 +41,7 @@ jobs:
           min="$(grep min_ansible_version meta/main.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
           echo "Declared floor: ansible-core==${min}"
           # Pin the venv to Python 3.12: ansible-core floors below 2.18 don't run on the repo's
-          # default Python 3.13, and 3.12 is compatible with every floor 2.16-2.19. (The floor
+          # default Python 3.13, and 3.12 is compatible with every floor 2.16-2.21. (The floor
           # itself must be >= the docker harness's requirement — community.docker 5.x needs 2.17.)
           uv venv .venv-floor --python 3.12
           uv pip install -p .venv-floor "ansible-core==${min}" "molecule>=26,<27" "docker>=7"

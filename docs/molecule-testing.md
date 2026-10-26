@@ -59,7 +59,7 @@ dependency → destroy → syntax → create → converge → idempotence → ve
 
 role 在 `meta/main.yml` 声明了 `min_ansible_version`。生成的 CI 里有一个 `molecule-floor`（GitHub）/ `docker-floor`（Forgejo）作业：建一个钉死在该最低版本的 venv 跑完整 docker 序列，**证明 role 真能在它声称的下限上跑**，而不只是开发用的较新版本。为不拖慢每个 PR，它只在 push 到 main / 手动 dispatch 时跑。
 
-> ⚠️ floor 的可测范围受测试工具链约束：floor venv 钉在 **Python 3.12**（ansible-core < 2.18 不支持仓库默认的 Python 3.13，而 3.12 兼容 2.16–2.19），且 docker 场景用 `community.docker` 5.x（`requires_ansible: '>=2.17.0'`）。因此**role 的 `min_ansible_version` 必须 ≥ 2.17**（`copier.yml` 的校验器现在会拦下更低的值；上限 ≤ 2.19，受 ansible-lint meta-runtime 规则约束）。低于 2.17 的 floor 无法用 docker 场景验证——把 floor 调高到可测版本，或单独给 floor 作业换更老的 `community.docker`。
+> ⚠️ floor 的可测范围受测试工具链约束：floor venv 钉在 **Python 3.12**（ansible-core < 2.18 不支持仓库默认的 Python 3.13，而 3.12 兼容 2.16–2.19），且 docker 场景用 `community.docker` 5.x（`requires_ansible: '>=2.17.0'`）。因此**role 的 `min_ansible_version` 必须 ≥ 2.17**（`copier.yml` 的校验器会拦下更低的值）。没有上限：ansible-lint 的 meta-runtime 规则只认到 2.19，高于 2.19 时生成的 `.ansible-lint` 自动用 `supported_ansible_also` 声明它。默认值 `2.21.0` 即开发工具链的版本，此时 floor 作业跑的就是它；要真正测更老的下限，生成时给更低的值（脚手架自测的 `smoke-role-floor` 用 2.19.0）。低于 2.17 的 floor 无法用 docker 场景验证——把 floor 调高到可测版本，或单独给 floor 作业换更老的 `community.docker`。
 
 ### check mode：make check
 

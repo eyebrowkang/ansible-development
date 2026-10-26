@@ -1,6 +1,7 @@
 ---
 # Default variables for the example role. Users override these in inventory/playbooks.
 #
-# Example (replace with your role's real defaults). Prefix every role variable with the
-# role name so it can't collide across roles (ansible-lint var-naming[no-role-prefix]).
-example_marker_path: "/etc/{{ namespace }}.{{ collection_name }}.example.applied"
+# Example (replace with your role's real defaults). Prefix every role variable with
+# <collection>_<role>_ ({{ collection_name }}_example_): variables share one namespace across
+# collections, and a bare <role>_ prefix (example_, install_) says nothing in an inventory.
+{{ collection_name }}_example_marker_path: "/etc/{{ namespace }}.{{ collection_name }}.example.applied"

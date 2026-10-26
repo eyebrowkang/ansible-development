@@ -83,8 +83,8 @@ jobs:
             data: -d ci_platform=both -d shell_templates=true -d release_automation=false
             scenario: default
             shellcheck: true
-          - name: minimal          # docker-only (no vagrant) + non-systemd (slim) image
-            data: -d include_vagrant=false -d needs_systemd=false
+          - name: minimal          # docker-only (no vagrant) + non-systemd (slim) image + a 2.19 floor (.ansible-lint without supported_ansible_also)
+            data: -d include_vagrant=false -d needs_systemd=false -d min_ansible_version=2.19.0
             scenario: default
             shellcheck: false
           - name: vagrant-only     # no docker scenario (vagrant-only); exercises include_docker=false
@@ -494,6 +494,8 @@ jobs:
   smoke-role-floor:
     # R6: prove the generated role actually runs on its DECLARED minimum ansible-core
     # (meta/main.yml min_ansible_version), not just the 2.21 dev toolchain it's pinned to.
+    # Generated with a 2.19.0 floor (the default is the toolchain's own 2.21.0), so the floor
+    # venv really runs an older ansible-core.
     # Build a separate venv pinned to that floor and run the full docker molecule sequence —
     # catches a role that uses a feature newer than the floor it claims. Gated to main/dispatch
     # (an extra toolchain install + a molecule run). The docker scenario is the same create.yml
@@ -507,8 +509,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: Install scaffold toolchain (copier)
         run: uv sync
-      - name: Generate role (defaults)
-        run: uv run copier copy --defaults --vcs-ref=HEAD -d role_name=testrole . "${{ runner.temp }}/eyebrowkang.testrole"
+      - name: Generate role (2.19.0 floor)
+        run: uv run copier copy --defaults --vcs-ref=HEAD -d role_name=testrole -d min_ansible_version=2.19.0 . "${{ runner.temp }}/eyebrowkang.testrole"
       - name: git init the generated role
         working-directory: ${{ runner.temp }}/eyebrowkang.testrole
         run: |
@@ -521,7 +523,7 @@ jobs:
           min="$(grep min_ansible_version meta/main.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
           echo "Declared floor: ansible-core==${min}"
           # Pin the venv to Python 3.12: ansible-core floors below 2.18 don't run on Python 3.13,
-          # and 3.12 is compatible with every floor 2.16-2.19 (mirrors the generated floor job).
+          # and 3.12 is compatible with every floor 2.16-2.21 (mirrors the generated floor job).
           uv venv .venv-floor --python 3.12
           uv pip install -p .venv-floor "ansible-core==${min}" "molecule>=26,<27" "docker>=7"
           # molecule shells out to ansible-config/ansible-galaxy, so the floor venv must be on PATH.

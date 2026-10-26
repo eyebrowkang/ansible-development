@@ -10,10 +10,11 @@ description: {{ (collection_description or collection_name) | tojson }}
 license:
   - {{ license }}
 {% endif %}
+{% set repository_url = (forgejo_url if ci_platform == 'forgejo' else 'https://github.com') ~ '/' ~ namespace ~ '/ansible-collection-' ~ collection_name %}
 # Update these URLs to your real repository (Galaxy requires `repository`).
-repository: https://github.com/{{ namespace }}/ansible-collection-{{ collection_name }}
-homepage: https://github.com/{{ namespace }}/ansible-collection-{{ collection_name }}
-issues: https://github.com/{{ namespace }}/ansible-collection-{{ collection_name }}/issues
+repository: {{ repository_url }}
+homepage: {{ repository_url }}
+issues: {{ repository_url }}/issues
 {% if collection_tags %}
 tags:
 {% for t in collection_tags %}

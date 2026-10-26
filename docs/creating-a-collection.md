@@ -27,7 +27,10 @@ copier 会询问（collection 相关）：
 | `collection_release` | （仅 `ci_platform` 含 github 时问）GitHub→Galaxy 发布：本地 bump+changelog+commit 后 push 裸 SemVer tag（如 `0.2.0`，不带 `v`）→ workflow 校验并构建该不可变 tag、`ansible-galaxy collection publish` 到 Galaxy + 建 GitHub release。需 `GALAXY_API_KEY` secret |
 | `collection_forgejo_release` | （仅 `ci_platform` 含 forgejo 时问；纯 forgejo 默认开，`both` 默认关）Forgejo tag 驱动发布：本地 bump+changelog+commit 后 push 裸 SemVer tag → workflow 校验并构建该不可变 tag + 建 Forgejo release 附 tarball（不发 Galaxy） |
 
-外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`builder_*`。
+外加共享问题：`namespace`、`author`、`license`、`min_ansible_version`、`ci_platform`、`include_docker`、`include_vagrant`、（forgejo 时）`forgejo_url`、`forgejo_runner_label`、`builder_*`，含义见 [creating-a-role.md](creating-a-role.md)。
+
+- `galaxy.yml` 的 `repository`/`homepage`/`issues`：纯 forgejo 时指向 `<forgejo_url>/<namespace>/ansible-collection-<name>`，含 github 时指向 GitHub。
+- 示例 role 的变量用 `<collection>_<role>_` 前缀（如 `testcoll_example_marker_path`）：Ansible 变量是一个扁平的命名空间，裸的 `<role>_` 前缀（`example_`、`install_`）在 inventory 里看不出属于谁，也会和别的 collection 的同名 role 冲突。ansible-lint 的 `var-naming[no-role-prefix]` 要求裸 role 名前缀，所以 collection 的 `.ansible-lint` 跳过这条规则（role 的不跳过）。collection 内的 role 名本身用短名（`install`、`config`），FQCN 已经带了 collection 名。
 
 > **molecule 场景开关（`include_docker` / `include_vagrant`）**：与 role 共享。`include_docker`（默认开）生成 `extensions/molecule/default/`（docker，example role）；`include_vagrant`（默认开）生成 `extensions/molecule/vagrant/`（vagrant+libvirt，靠短名解析 example role）。两者至少开一个，否则 copier 校验报错。
 

@@ -14,7 +14,7 @@ jobs:
   docker:
     # Container job; the runner's automounted docker.sock (DooD) lets molecule create
     # the example-role instance on the host daemon. The role is resolved by short name.
-    runs-on: ubuntu-latest
+    runs-on: {{ forgejo_runner_label }}
     container:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:

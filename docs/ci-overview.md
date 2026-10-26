@@ -5,7 +5,7 @@
 | | runner | docker 场景 | vagrant 场景 |
 |---|---|---|---|
 | **GitHub Actions**（开源） | 公共 `ubuntu-latest` | ✓ 用 setup-uv | ✗（无可靠 KVM） |
-| **Forgejo Actions**（自托管） | 你的 runner | ✓ 用 builder 镜像 | ✓ 容器化 `[self-hosted, kvm]` |
+| **Forgejo Actions**（自托管） | 你的 runner（`forgejo_runner_label`，默认 `ubuntu-latest`） | ✓ 用 builder 镜像 | ✓ 容器化 `[self-hosted, kvm]` |
 
 docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 Forgejo。
 
@@ -17,6 +17,7 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 - molecule 跑在 job 容器里，但通过 socket 命令**宿主 daemon** 创建被测实例——实例是 job 容器的**兄弟**，不是嵌套在里面。
 - docker 场景因此**不需要** job 容器特权；systemd 实例所需的 `privileged` / cgroup 由 `molecule.yml` 的 platform 指定，由宿主 daemon 满足。
+- ⚠️ actions cache（`actions/cache`、`setup-go` 的 `cache: true` 等）：runner 的 cache server 地址要能从 job 容器里访问到，否则恢复缓存会卡几分钟才超时（eyebrowkang.caddy 在 2026-10 撞上过）。修 runner 配置里 cache 的 `host`/网络之前，生成的 workflow 不要开缓存。
 - ⚠️ automount + privileged = **零隔离**：这台 runner 相当于把宿主 root 暴露给 workflow。**只跑你可信的代码**；公开仓库 / fork PR 放到 GitHub 公共 runner（沙箱化）。
 
 ## builder 镜像

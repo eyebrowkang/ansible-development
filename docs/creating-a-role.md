@@ -18,7 +18,7 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 |------|------|
 | `role_name` | 小写，作为 Galaxy role_name |
 | `namespace` | Galaxy 命名空间 / 作者 |
-| `min_ansible_version` | 写入 meta/main.yml |
+| `min_ansible_version` | 写入 meta/main.yml（默认 `2.21.0`；role 须 ≥ 2.17.0；高于 2.19 时 `.ansible-lint` 自动带 `supported_ansible_also`） |
 | `galaxy_collections` | 依赖的 collection |
 | `license` | meta 里记录的 SPDX id |
 | `ci_platform` | github / forgejo / both |
@@ -29,6 +29,8 @@ copier 会询问（见仓库根的 [`copier.yml`](../copier.yml)）：
 | `release_automation` | （仅 `ci_platform` 含 github 时问）生成 GitHub release 自动化：release-please + 语义化 PR 标题检查 + Galaxy 导入 |
 | `forgejo_release` | （仅 `ci_platform` 含 forgejo 时问，纯 forgejo 默认开）生成 Forgejo tag 驱动发布：`.release-notes/v*.md` 写人工 Summary/Upgrade Notes，push `v*` tag → git-cliff 出 Changes + 建 Forgejo release + 回写 CHANGELOG |
 | `dependency_updates` | 是否生成 Renovate 依赖更新自动化（uv + Actions；默认开）。只生成平台无关的 `renovate.json`，由仓库外的 Renovate 读取（GitHub App / 自托管 Forgejo renovate-bot）。取代旧的 Dependabot |
+| `forgejo_url` | （仅 `ci_platform` 含 forgejo 时问）Forgejo 实例地址，如 `https://git.example.com`；`builder_registry` 的默认值由它的主机名推出 |
+| `forgejo_runner_label` | （同上）Forgejo 容器 job（lint、docker molecule、release）的 `runs-on` label，默认 `ubuntu-latest`；vagrant job 固定 `[self-hosted, kvm]` |
 | `builder_registry` | Forgejo builder 镜像所在 registry |
 | `builder_tag` | builder 镜像 tag —— 因 runner `force_pull:false`，应填 build-image.yml 产出的不可变 tag（如 `sha-ab12cd3`），别用 `latest`；默认是占位 `sha-REPLACE_ME`，记得替换 |
 

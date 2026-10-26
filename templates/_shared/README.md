@@ -41,7 +41,7 @@ next update.
 
 | `_shared/` file              | role symlink                                                              | collection symlink                                                                       |
 | ---------------------------- | ------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `.ansible-lint`              | `role/template/.ansible-lint`                                            | `collection/template/.ansible-lint`                                                      |
+| `.ansible-lint.jinja`        | `role/template/.ansible-lint.jinja`                                      | — (own copy: adds the `var-naming[no-role-prefix]` skip)                                 |
 | `.copier-answers.yml.jinja`  | `role/template/.copier-answers.yml.jinja`                               | `collection/template/.copier-answers.yml.jinja`                                          |
 | `.pre-commit-config.yaml`    | `role/template/.pre-commit-config.yaml`                                 | `collection/template/.pre-commit-config.yaml`                                            |
 | `.python-version`            | `role/template/.python-version`                                          | `collection/template/.python-version`                                                    |

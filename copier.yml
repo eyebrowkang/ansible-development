@@ -127,13 +127,12 @@ license:
 
 min_ansible_version:
   type: str
-  help: "Minimum ansible-core version (full X.Y.Z — role meta/main.yml + collection meta/runtime.yml). Roles must be >= 2.17.0 (the docker floor job installs community.docker 5.x, which needs 2.17); both kinds <= 2.19.0 (ansible-lint's meta-runtime rule caps requires_ansible there). The dev/CI toolchain itself runs ansible-core 2.21.x."
-  default: "2.19.0"
+  help: "Minimum ansible-core version (full X.Y.Z — role meta/main.yml + collection meta/runtime.yml). Roles must be >= 2.17.0 (the docker floor job installs community.docker 5.x, which needs 2.17). Above 2.19, .ansible-lint lists it in supported_ansible_also (ansible-lint's meta-runtime rule only knows releases up to 2.19). The dev/CI toolchain itself runs ansible-core 2.21.x."
+  default: "2.21.0"
   validator: >-
     {% set _v = min_ansible_version.split('.') %}
     {% if _v | length != 3 or not (_v[0].isdigit() and _v[1].isdigit() and _v[2].isdigit()) %}min_ansible_version must be a full X.Y.Z version with numeric components (e.g. 2.19.0).
     {% elif kind == 'role' and (_v | map('int') | list) < [2, 17, 0] %}min_ansible_version for a role must be >= 2.17.0: the docker floor job installs community.docker 5.x, which requires ansible-core >= 2.17 (see docs/molecule-testing.md).
-    {% elif (_v | map('int') | list) > [2, 19, 0] %}min_ansible_version must be <= 2.19.0: ansible-lint's meta-runtime rule caps requires_ansible there (the dev/CI toolchain runs 2.21.x).
     {% endif %}
 
 ci_platform:
@@ -310,12 +309,31 @@ collection_changelog:
   when: false
   default: "{{ collection_release or collection_forgejo_release }}"
 
-# ================================================= shared: Forgejo builder image ===
+# ============================================== shared: Forgejo instance + builder ===
+
+forgejo_url:
+  type: str
+  help: "Base URL of your Forgejo instance, e.g. https://git.example.com (a pure-forgejo collection's galaxy.yml links its repository there; the builder registry defaults to its host)"
+  default: "https://git.example.com"
+  when: "{{ ci_platform in ['forgejo', 'both'] }}"
+  validator: >-
+    {% if not (forgejo_url.startswith('https://') or forgejo_url.startswith('http://')) %}forgejo_url must start with https:// (or http://).
+    {% elif forgejo_url.endswith('/') %}forgejo_url must not end with a slash.
+    {% endif %}
+
+forgejo_runner_label:
+  type: str
+  help: "runs-on label of the Forgejo runner for the container jobs (lint, docker molecule, release); the vagrant job keeps [self-hosted, kvm]"
+  default: "ubuntu-latest"
+  when: "{{ ci_platform in ['forgejo', 'both'] }}"
+  validator: >-
+    {% if not forgejo_runner_label or ' ' in forgejo_runner_label %}forgejo_runner_label must be one label, without spaces.
+    {% endif %}
 
 builder_registry:
   type: str
   help: "Forgejo registry namespace for CI builder images, e.g. git.example.com/<owner>"
-  default: "git.example.com/{{ namespace }}"
+  default: "{{ forgejo_url.split('://', 1)[-1] }}/{{ namespace }}"
   when: "{{ ci_platform in ['forgejo', 'both'] }}"
 
 builder_tag:

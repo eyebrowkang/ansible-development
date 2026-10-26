@@ -8,7 +8,7 @@ defaults:
 
 jobs:
   lint:
-    runs-on: ubuntu-latest
+    runs-on: {{ forgejo_runner_label }}
     container:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
@@ -21,7 +21,7 @@ jobs:
       - run: uv run ansible-lint
 
   sanity:
-    runs-on: ubuntu-latest
+    runs-on: {{ forgejo_runner_label }}
     container:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
@@ -34,7 +34,7 @@ jobs:
 {% if include_unit_tests %}
 
   units:
-    runs-on: ubuntu-latest
+    runs-on: {{ forgejo_runner_label }}
     container:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
