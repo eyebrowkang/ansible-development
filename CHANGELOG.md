@@ -2,6 +2,53 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.6.0] - 2026-10-27
+
+### Summary
+
+吸收 eyebrowkang.caddy 0.11.0 代码评审里模板侧的几条，role 和 collection 都受影响：
+
+- **Python 3.14 成为默认版本，builder 镜像改带 3.9 和 3.14**（`builder/v1.3.0`）。镜像不再只有 3.13，而是带 ansible-core 2.21 目标范围（3.9–3.14）的两端。这样 `ansible-test sanity` 的 compile、import 和 `units` 会在最低、最高两个版本上检查模块代码：新语法和新 API 在最低版本上能抓到，被移除的在最高版本上能抓到。共享的 `.python-version` 改成 3.14。
+- **生成的 CI 改用 `uv sync --locked`**：`uv.lock` 过期时 CI 直接失败，不再静默地重新解析依赖、测一组没锁定的版本。生成后的步骤里多了一步，提交 `uv.lock`。
+- **collection 的制品不再包含 `tests/`**，不管 `include_unit_tests` / `include_plugins` 怎么答。测试可能读制品里没有的文件（比如 `galaxy.yml` 会被换成 `MANIFEST.json`），在装好的 collection 里本来就跑不通；要跑测试，从发布 tag 的 clone 里跑。
+- `make check` 的帮助文字写明只能用在已 converge 的实例上：`--check` 也会传给场景自带的 `create.yml` 和 `prepare.yml`，它们在 check mode 下什么都不做，molecule 却记成已完成。
+- 生成的 README 的标题 `Development & testing` 改为 `Development and testing`：Forgejo 和 GitHub 式预览给 `&` 算出的锚点不同。
+
+### Upgrade Notes
+
+**Forgejo 仓库要把 `builder_tag` 升到 `v1.3.0`**，和这次 update 一起做：
+
+```bash
+uvx copier update --trust --defaults -d builder_tag=v1.3.0
+```
+
+`.python-version` 改成 3.14 之后，旧镜像里没有 3.14，uv 会在每次 CI 运行时静默下载一份。所以两者要一起改。
+
+**提交 `uv.lock`。** CI 现在用 `uv sync --locked`，仓库里没有 `uv.lock`，或者它和 `pyproject.toml` 对不上，CI 都会失败。update 之后先本地 `uv sync`，把变化的 `uv.lock` 一起提交。
+
+**collection 的 `galaxy.yml`**：开过 `include_unit_tests` 或 `include_plugins` 的，`build_ignore` 里的 `tests/output` 会换成 `tests`。手工改过这一段的，取模板一侧。
+
+**`make check` 的说明**：在 `Makefile` 里改过 `check` 帮助文字或注释的，这一段会冲突；保留你自己的意思，再加上“只用在已 converge 的实例上”。
+
+### Changes
+
+#### Bug Fixes
+
+- _collection_: The artifact never ships tests/
+
+
+#### Documentation
+
+- _release_: V1.6.0 notes
+
+
+#### Features
+
+- _images_: Python 3.14 and 3.9 instead of 3.13
+
+- _templates_: Python 3.14 by default; CI installs the committed uv.lock; make check on converged instances; headings both previews anchor alike
+
+
 ## [1.5.0] - 2026-10-26
 
 ### Summary
