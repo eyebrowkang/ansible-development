@@ -25,6 +25,12 @@ COPY --from=docker:29-cli@sha256:cdfd70216347d3cbc202a64752101dd76d11f87396749c3
 # uv (pinned) provides Python and installs each role's deps from its uv.lock
 COPY --from=ghcr.io/astral-sh/uv:0.11@sha256:ff07b86af50d4d9391d9daf4ff89ce427bc544f9aae87057e69a1cc0aa369946 /uv /uvx /usr/local/bin/
 ENV UV_LINK_MODE=copy
-RUN uv python install 3.13.14
+# The supported range's ends, with ansible-core's target range (3.9-3.14 for 2.21) in view:
+# 3.14 is the repos' default Python (.python-version), 3.9 lets ansible-test check module
+# code on the oldest target Python (compile, import, units). Breaking changes go one way:
+# new syntax and APIs show on the oldest, removed ones on the newest. The executables go on
+# PATH (python3.14, python3.9), where ansible-test looks for each version.
+ENV UV_PYTHON_BIN_DIR=/usr/local/bin
+RUN uv python install 3.14.6 3.9.25
 
 LABEL org.opencontainers.image.title="ansible-builder"

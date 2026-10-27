@@ -5,7 +5,7 @@ Built and pushed by [`../../.forgejo/workflows/build-image.yml`](../../.forgejo/
 
 | Image | Dockerfile | Used by | Contents |
 |-------|-----------|---------|----------|
-| `ansible-builder` | `Dockerfile` | Forgejo lint + docker molecule jobs | uv + Python 3.13 + docker client + git + make + node + jq + shellcheck |
+| `ansible-builder` | `Dockerfile` | Forgejo lint + docker molecule jobs | uv + Python 3.14 and 3.9 + docker client + git + make + node + jq + shellcheck |
 | `ansible-builder-vagrant` | `Dockerfile.vagrant` | every role's (containerized) vagrant job + scaffold `smoke-role-vagrant` | the above + Vagrant + QEMU + libvirt + dnsmasq/iptables + tini + build deps |
 
 `node` is included because `actions/checkout` (and other JS actions) need it in the job container.
