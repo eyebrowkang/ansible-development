@@ -2,6 +2,87 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.5.0] - 2026-10-26
+
+### Summary
+
+吸收 eyebrowkang.caddy 开发中的痛点，role 和 collection 都受影响：
+
+- **`min_ansible_version` 去掉 2.19 的上限，默认 `2.21.0`**（即开发工具链的版本），上限改为开发工具链的 ansible-core 2.21.x。collection 高于 2.19 时，生成的 `.ansible-lint` 自动用 `supported_ansible_also` 声明它（ansible-lint 的 meta-runtime 规则只认到 2.19，且只检查 collection 的 `meta/runtime.yml`；role 不需要）。role 仍须 ≥ 2.17.0。
+- **新问题 `forgejo_url`**（Forgejo 实例地址）：`builder_registry` 的默认值由它推出；纯 forgejo 的 collection 的 `galaxy.yml` 仓库链接指向它，不再一律指向 GitHub。
+- **新问题 `forgejo_runner_label`**：Forgejo 容器 job（lint、docker molecule、release）的 `runs-on`，默认 `ubuntu-latest`；vagrant job 仍是 `[self-hosted, kvm]`。
+- **collection 新问题 `include_unit_tests`**：只接 `ansible-test units`（`units` target、CI job、`tests/unit/.gitkeep`、`build_ignore` 收窄到 `tests/output`），不要示例插件。`include_plugins` 隐含它。
+- **collection 的变量前缀改为 `<collection>_<role>_`**：示例 role 的变量是 `<collection>_example_marker_path`，collection 的 `.ansible-lint` 跳过 `var-naming[no-role-prefix]`（整条规则一起关掉，前缀约定从此只能靠自觉）。
+- 生成的 `verify.yml` 注释示例改用 `service_facts`（原来的 `command: systemctl is-active` 会触发 ansible-lint 的 `command-instead-of-module`）。
+- 自测的 update 检查除了 `.rej`，也检查写进文件的冲突标记。
+
+### Upgrade Notes
+
+**冲突的形式。** copier 默认的 `--conflict inline` 把冲突以 `<<<<<<<` / `>>>>>>>` 标记写进文件本身，**不会**生成 `.rej`。所以"没有 `.rej`"不代表合并干净：update 后先检查
+
+```bash
+git grep -nE '^(<<<<<<<|>>>>>>>) '
+```
+
+YAML 里残留的标记后面的 lint 还能抓到，Makefile、README、`.md` 里的抓不到。
+
+**所有 Forgejo（`forgejo` / `both`）仓库，第一次 update 都带上两个新问题的真实值：**
+
+```bash
+uvx copier update --trust --defaults -d forgejo_url=https://git.utlas.de -d forgejo_runner_label=utlas-medium
+```
+
+`--defaults` 会把新问题的默认值写进 `.copier-answers.yml`，此后每次 update 都沿用：`forgejo_url` 会变成占位的 `https://git.example.com`，`forgejo_runner_label` 会变成 `ubuntu-latest`。
+
+**哪些文件会冲突、保留哪一侧**（通用规则：把维护交给模板的，取模板一侧；你自己的内容，保留自己一侧）：
+
+- `verify.yml`：删掉或替换过注释示例的仓库，这一段会冲突。**保留自己的一侧**。
+- collection 的 `.ansible-lint`：手工加过 `supported_ansible_also` 或 `var-naming[no-role-prefix]` 跳过的仓库会冲突。**取模板一侧**，两者现在由模板生成。
+- 打开 `include_unit_tests` 时，手工接过 units 的 collection，其 `Makefile`、`galaxy.yml`、`.forgejo/workflows/lint.yml`（或 `.github/workflows/ci.yml`）里 units 相关的几处会冲突，注释文字和手写的不同。**取模板一侧**，否则接线没有真正交给模板维护。同一文件里其他你自己的改动照常保留；一个冲突块里两者都有时（例如 `build_ignore` 里你自己加的条目紧挨着 units 那一行），手工合并，不要整块取一侧。
+- 手工改过 `runs-on` 或 `galaxy.yml` 仓库链接的：带上上面两个 `-d` 后，模板一侧就是你的值，取哪侧都一样。
+
+**collection 打开单测接线**：已有自己插件的 collection 用 `-d include_unit_tests=true`。按上一条解决冲突后，接线就交给模板维护，不必再在本地手工保留。
+
+**`.copier-answers.yml` 里 `min_ansible_version` 高于 2.19 的仓库**（此前手工改过答案）：`copier update` 会用旧版模板和记录的答案渲染比较基准，而旧版的校验器拒绝高于 2.19 的值。只此一次：先把答案文件里的值改成 `2.19.0` 并提交（答案文件开头写着 `NEVER EDIT MANUALLY`，这里是例外），再 update 并带 `-d min_ansible_version=<真实值>`。
+
+**其他：**
+
+- 记录的 `min_ansible_version` 不会自动变：要升到 2.21.0，update 时带 `-d min_ansible_version=2.21.0`。
+- 已删掉示例 role 的 collection，update 不会把它生成回来；保留着示例 role 的，变量会被改名为 `<collection>_example_marker_path`。
+
+### Changes
+
+#### Bug Fixes
+
+- _templates_: Verify.yml suggests service_facts, not a command that trips ansible-lint
+
+- _collection_: A generic comment for the var-naming skip
+
+- Follow the review of the v1.5.0 changes
+
+- Follow the user's review of v1.5.0
+
+- The self-test's conflict-marker check under sh -e; correct the include_unit_tests claim
+
+
+#### Documentation
+
+- Include_unit_tests
+
+- _release_: V1.5.0 notes
+
+- _release_: V1.5.0 - a conflict block may hold both sides
+
+- The enable-unit-tests sentence back after the update that turns units on
+
+
+#### Features
+
+- _collection_: Include_unit_tests wires ansible-test units without the example plugins
+
+- Ansible-core 2.21 floor by default, Forgejo URL and runner label, collection variable prefix
+
+
 ## [1.4.0] - 2026-08-22
 
 ### Summary
