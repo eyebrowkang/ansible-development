@@ -9,7 +9,7 @@ jobs:
       image: {{ builder_registry }}/ansible-builder:{{ builder_tag }}
     steps:
       - uses: actions/checkout@v4
-      - run: uv sync
+      - run: uv sync --locked
       - run: uv run ansible-galaxy collection install -r molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint

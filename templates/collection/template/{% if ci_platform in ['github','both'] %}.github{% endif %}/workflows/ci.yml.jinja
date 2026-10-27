@@ -16,7 +16,7 @@ jobs:
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - run: uv run ansible-galaxy collection install -r extensions/molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint
@@ -28,7 +28,7 @@ jobs:
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - name: ansible-test sanity
         run: uv run ansible-test sanity --venv --color
 {% if include_plugins or include_unit_tests %}
@@ -40,7 +40,7 @@ jobs:
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - name: ansible-test units
         run: uv run ansible-test units --venv --color
 {% endif %}
@@ -54,7 +54,7 @@ jobs:
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - name: Molecule (example role, docker)
         run: uv run molecule test
       - name: Destroy

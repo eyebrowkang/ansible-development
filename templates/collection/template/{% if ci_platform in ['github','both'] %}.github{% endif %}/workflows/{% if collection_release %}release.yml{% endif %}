@@ -33,7 +33,7 @@ jobs:
             || { echo "::error::tag '$version' does not match galaxy.yml version '$metadata_version'"; exit 1; }
           [ "$(git describe --exact-match --tags HEAD)" = "$version" ] \
             || { echo "::error::HEAD is not exactly tag '$version'"; exit 1; }
-      - run: uv sync
+      - run: uv sync --locked
       - name: Build the collection from the release tag
         run: uv run ansible-galaxy collection build --output-path dist
       - name: Publish to Ansible Galaxy

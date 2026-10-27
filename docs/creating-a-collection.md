@@ -44,6 +44,7 @@ copier 会询问（collection 相关）：
 cd collections/ansible_collections/<namespace>/<name>
 git init && git add -A && git commit -m "init from template"
 uv sync
+git add uv.lock && git commit -m "uv.lock"   # CI 装的就是它（uv sync --locked）
 make lint        # yamllint + ansible-lint
 make sanity      # ansible-test sanity（--venv，不需 docker）
 make test        # molecule（example role）

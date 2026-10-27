@@ -10,7 +10,7 @@ help:
 {% endif %}{% if collection_changelog %}	@echo "changelog - antsibull-changelog release (fold fragments; bump galaxy.yml first)"
 {% endif %}{% if include_docker %}	@echo "test      - molecule test for the example role (docker)"
 	@echo "converge  - molecule converge (example role, docker)"
-	@echo "check     - molecule converge --check (dry-run; only if the example role is check-mode safe)"
+	@echo "check     - molecule converge --check (dry-run, on converged instances; only if the example role is check-mode safe)"
 	@echo "destroy   - molecule destroy (example role, docker)"
 {% endif %}{% if include_vagrant %}	@echo "test-vm    - molecule test (example role, vagrant; needs 'uv sync --group vagrant' + libvirt/KVM)"
 	@echo "destroy-vm - molecule destroy (example role, vagrant)"
@@ -56,8 +56,9 @@ converge:
 	uv run molecule converge
 
 # Dry-run: everything after `--` is passed through to ansible-playbook, so this previews
-# changes via check mode. Only meaningful if the example role is check-mode safe. See
-# docs/molecule-testing.md.
+# changes via check mode. Only meaningful if the example role is check-mode safe. On
+# converged instances only: the scenario's create.yml and prepare.yml get --check too, and
+# molecule would record them as done. See docs/molecule-testing.md.
 check:
 	uv run molecule converge -- --check
 

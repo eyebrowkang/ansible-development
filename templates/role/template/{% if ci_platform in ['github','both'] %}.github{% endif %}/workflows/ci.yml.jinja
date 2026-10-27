@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - run: uv run ansible-galaxy collection install -r molecule/{% if include_docker %}default{% else %}vagrant{% endif %}/collections.yml
       - run: uv run yamllint .
       - run: uv run ansible-lint
@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync
+      - run: uv sync --locked
       - name: Molecule (docker)
         run: uv run molecule test
       - name: Destroy
@@ -49,7 +49,7 @@ jobs:
           min="$(grep min_ansible_version meta/main.yml | grep -oE '[0-9]+\.[0-9]+\.[0-9]+')"
           echo "Declared floor: ansible-core==${min}"
           # Pin the venv to Python 3.12: ansible-core floors below 2.18 don't run on the repo's
-          # default Python 3.13, and 3.12 is compatible with every floor 2.16-2.21. (The floor
+          # default Python 3.14, and 3.12 is compatible with every floor 2.16-2.21. (The floor
           # itself must be >= the docker harness's requirement — community.docker 5.x needs 2.17.)
           uv venv .venv-floor --python 3.12
           uv pip install -p .venv-floor "ansible-core==${min}" "molecule>=26,<27" "docker>=7"

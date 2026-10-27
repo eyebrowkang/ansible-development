@@ -39,6 +39,7 @@ _message_after_copy: |
 
     git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
     uv sync
+    git add uv.lock && git commit -m "uv.lock"   # CI installs exactly it (uv sync --locked)
   {% if include_docker %}  make test          # docker scenario
   {% endif %}{% if include_vagrant %}  make test-vm       # vagrant scenario (needs libvirt + KVM)
   {% endif %}
@@ -47,6 +48,7 @@ _message_after_copy: |
 
     git init && git add -A && git commit -m "init from template"   # REQUIRED before molecule
     uv sync
+    git add uv.lock && git commit -m "uv.lock"   # CI installs exactly it (uv sync --locked)
     make sanity        # ansible-test sanity
   {% if include_docker %}  make test          # molecule (example role, docker)
   {% endif %}{% if include_vagrant %}  make test-vm       # molecule (example role, vagrant; needs libvirt + KVM)

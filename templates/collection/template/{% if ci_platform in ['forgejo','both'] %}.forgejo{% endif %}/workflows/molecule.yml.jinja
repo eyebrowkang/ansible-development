@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           path: ansible_collections/{{ namespace }}/{{ collection_name }}
-      - run: uv sync
+      - run: uv sync --locked
       - name: Molecule (example role, docker)
         run: uv run molecule test
       - name: Destroy
@@ -52,7 +52,7 @@ jobs:
           virtlogd -d
           setsid tini -s -- libvirtd >/tmp/libvirtd.log 2>&1 &
           for i in $(seq 30); do virsh -c qemu:///system version >/dev/null 2>&1 && break; sleep 1; done
-      - run: uv sync --group vagrant
+      - run: uv sync --locked --group vagrant
       - name: Molecule (example role, vagrant)
         run: make test-vm
       - name: Destroy
