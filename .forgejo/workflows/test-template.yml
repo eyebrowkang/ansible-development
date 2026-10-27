@@ -223,10 +223,10 @@ jobs:
           - name: adversarial      # quotes/colons in free-text — locks the | tojson escaping invariant
             data: "-d ci_platform=both -d 'author=a:b \"c\"' -d 'collection_description=a \"b\": c'"
             scenario: default
-          - name: plugins          # include_plugins: filter+module+units + narrowed build_ignore (lint/render only here; sanity+units in smoke-collection-plugins)
+          - name: plugins          # include_plugins: filter+module+units (lint/render only here; sanity+units in smoke-collection-plugins)
             data: -d ci_platform=both -d include_plugins=true
             scenario: default
-          - name: unit-tests       # include_unit_tests alone: the units wiring (Make target, CI jobs, tests/unit/.gitkeep, narrowed build_ignore) without the example plugins
+          - name: unit-tests       # include_unit_tests alone: the units wiring (Make target, CI jobs, tests/unit/.gitkeep) without the example plugins
             data: -d ci_platform=both -d include_unit_tests=true
             scenario: default
           - name: release          # both release tracks: github (Galaxy publish) + forgejo + antsibull changelogs/ (yamllints both release.yml; changelog sanity runs in smoke-collection)
