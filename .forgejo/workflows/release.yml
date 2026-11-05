@@ -11,9 +11,6 @@ on:
     tags:
       - 'v*'
 
-permissions:
-  contents: write
-
 jobs:
   resolve-image:
     # Resolve the newest released builder image (latest `builder/v*` tag) — no hardcoded tag.
