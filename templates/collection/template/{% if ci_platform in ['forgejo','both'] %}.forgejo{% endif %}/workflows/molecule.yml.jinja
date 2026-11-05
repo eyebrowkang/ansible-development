@@ -5,6 +5,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Queue this repo's molecule runs instead of overlapping them: the instances have fixed
+# names on the shared host daemon (DooD), so a second run's create/destroy would clobber
+# the first's. Concurrency groups are per-repository, so a plain name is enough.
+concurrency:
+  group: molecule
+  cancel-in-progress: false
+
 defaults:
   run:
     working-directory: ansible_collections/{{ namespace }}/{{ collection_name }}

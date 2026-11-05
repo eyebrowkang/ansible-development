@@ -43,6 +43,10 @@ docker 轨是到处通用的主力；vagrant 轨落在你自托管、可控的 F
 
 ⚠ **特权/设备只能来自 runner 配置,不能写在 job 里**:Forgejo 的 `container.options` 只认 `--volume`/`--tmpfs`/`--hostname`/`--memory`,**不认 `--privileged`/`--init`/`--device`**(之前 `--init` 没生效正是因此)。所以 `/dev/kvm` + 特权必须由那台 **privileged 的 `[self-hosted, kvm]` runner**(config 级)提供。契合「每个 job 都在 Docker 里、不污染宿主」的 runner 哲学。
 
+⚠ **Forgejo 会忽略 `permissions`**（[与 GitHub Actions 的差异](https://forgejo.org/docs/latest/user/actions/github-actions/#known-list-of-differences)）：自动 token 的权限由 Forgejo 决定，写了也不生效，反而让人误以为权限受了限制。所以 `.forgejo/` 下的 workflow 都不写 `permissions`；`.github/` 下的照常写。
+
+⚠ **molecule 实例名固定，同一 daemon 上的并发运行会互相删实例**：DooD 下所有 job 共用宿主的 Docker daemon。生成的 `molecule.yml` workflow 带 `concurrency: {group: molecule, cancel-in-progress: false}`，同一仓库的 molecule 运行排队执行（group 按仓库隔离，所以不需要带仓库名）。`concurrency` 不管同一次运行里的 job 之间的顺序，那要靠 `needs`（`docker-floor` 排在 `docker` 之后）。跨仓库靠实例名区分：role 的是 `<role_name>-debian13`，collection 示例场景的是 `<collection_name>-example-debian13`（下划线换成 `-`）。脚手架自测同理：`test-template.yml` 整体排队，`smoke-role-floor` 排在 `smoke-role` 之后。
+
 > 脚手架自测的 `smoke-role-vagrant`（gate 到 main/dispatch）用同款配置端到端跑这条轨。
 
 **备选 host-mode**：删掉该 job 的 `container:`（及起 libvirtd 的步骤），由 runner 主机自带 vagrant/libvirt/KVM——会在宿主留下 box/VM。

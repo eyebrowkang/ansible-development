@@ -17,7 +17,7 @@ driver:
     name: libvirt
 
 platforms:
-  - name: example-vm
+  - name: {{ collection_name | replace('_', '-') }}-example-vm
     box: debian/trixie64
     memory: 1024
     cpus: 1
@@ -34,7 +34,7 @@ provisioner:
     verify: verify.yml
   inventory:
     host_vars:
-      example-vm:
+      {{ collection_name | replace('_', '-') }}-example-vm:
         ansible_user: vagrant
 
 verifier:

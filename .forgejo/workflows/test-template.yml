@@ -32,6 +32,14 @@ on:
       - .forgejo/workflows/test-template.yml
   workflow_dispatch:
 
+# Queue self-test runs instead of overlapping them. The smokes create fixed-name instances
+# (testrole-debian13, testcoll-example-debian13) on the shared host daemon, and a PR run and
+# a main run are on different branches, so the default same-branch cancel doesn't keep them
+# apart. Groups are per-repository.
+concurrency:
+  group: test-template
+  cancel-in-progress: false
+
 jobs:
   resolve-image:
     # Resolve the newest released builder image (latest `builder/v*` tag) so every
@@ -519,8 +527,11 @@ jobs:
     # catches a role that uses a feature newer than the floor it claims. Gated to main/dispatch
     # (an extra toolchain install + a molecule run). The docker scenario is the same create.yml
     # the role+collection share, so this covers the floor for both.
+    # After smoke-role, not alongside it: both generate `testrole`, so both create a
+    # `testrole-debian13` instance on the same host daemon. `concurrency` doesn't order jobs
+    # within one run; `needs` does (same as the generated role's docker-floor).
     if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch' }}
-    needs: resolve-image
+    needs: [resolve-image, smoke-role]
     runs-on: ubuntu-latest
     container:
       image: ${{ needs.resolve-image.outputs.builder }}
