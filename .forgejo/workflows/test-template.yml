@@ -466,9 +466,23 @@ jobs:
       - name: ansible-test sanity
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run ansible-test sanity --venv --color
+      - name: Converge the example role by FQCN
+        # .config/molecule/config.yml turns prerun off and puts the working tree on
+        # ANSIBLE_COLLECTIONS_PATH; the template's converge uses the short name, so switch it
+        # to the FQCN to prove the collection itself resolves without an installed copy.
+        working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
+        run: |
+          sed -i 's/^    - role: example$/    - role: eyebrowkang.testcoll.example/' extensions/molecule/default/converge.yml
+          grep -q 'role: eyebrowkang.testcoll.example$' extensions/molecule/default/converge.yml
       - name: Molecule (example role)
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll
         run: uv run molecule test
+      - name: No copy of the collection under ANSIBLE_HOME
+        # With prerun on, molecule installs the collection into ~/.ansible/collections, and
+        # that copy goes stale (#20).
+        run: |
+          copy="${ANSIBLE_HOME:-$HOME/.ansible}/collections/ansible_collections/eyebrowkang/testcoll"
+          if [ -e "$copy" ]; then echo "::error::molecule installed a copy at $copy"; exit 1; fi
       - name: Destroy
         if: always()
         working-directory: ${{ runner.temp }}/ansible_collections/eyebrowkang/testcoll

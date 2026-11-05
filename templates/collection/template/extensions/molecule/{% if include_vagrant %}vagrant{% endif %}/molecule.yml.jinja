@@ -2,8 +2,8 @@
 # Vagrant + libvirt scenario for the collection's example role — VM-only needs
 # (kernel modules, reboot, real networking). Runs locally and on the self-hosted
 # Forgejo [self-hosted, kvm] runner. Mirrors the standalone role's vagrant scenario,
-# but resolves the role by short name via ANSIBLE_ROLES_PATH (converge uses
-# `roles: [example]`), exactly like this collection's docker scenario.
+# but resolves the role by short name (converge uses `roles: [example]`) via the
+# ANSIBLE_ROLES_PATH from .config/molecule/config.yml, like the docker scenario.
 #
 # molecule-plugins#301: run this via `make test-vm`, which exports ANSIBLE_LIBRARY /
 # ANSIBLE_FILTER_PLUGINS so Ansible can find the vagrant module/filter. A bare
@@ -26,9 +26,6 @@ platforms:
 
 provisioner:
   name: ansible
-  env:
-    # Resolve the collection's roles by short name (converge uses `roles: [example]`).
-    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/roles
   playbooks:
     converge: converge.yml
     verify: verify.yml

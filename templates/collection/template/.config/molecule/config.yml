@@ -1,0 +1,20 @@
+---
+# Shared molecule config: molecule merges every scenario's molecule.yml (under
+# extensions/molecule/) over this file, so these settings apply to all of them —
+# including scenarios you add later.
+#
+# Ansible resolves this collection from the working tree, never from a copy:
+# - prerun: false — molecule's prerun would otherwise install the collection into
+#   ~/.ansible/collections on every command, and that copy goes stale as soon as the
+#   working tree changes (ansible-lint then warns "Another version ... was found"
+#   and resolves FQCNs against it). The scenarios' `dependency: galaxy` step still
+#   installs collections.yml, so list galaxy.yml's dependencies there too.
+# - ANSIBLE_COLLECTIONS_PATH puts the tree this collection sits in first
+#   (<root>/ansible_collections/<ns>/<name> — the same layout ansible-test requires),
+#   then Ansible's default paths, where collections.yml installs.
+provisioner:
+  env:
+    ANSIBLE_COLLECTIONS_PATH: ${MOLECULE_PROJECT_DIRECTORY}/../../..:${ANSIBLE_HOME:-~/.ansible}/collections:/usr/share/ansible/collections
+    # The collection's own roles also resolve by short name (`roles: [example]`).
+    ANSIBLE_ROLES_PATH: ${MOLECULE_PROJECT_DIRECTORY}/roles
+prerun: false

@@ -48,7 +48,7 @@ changelog:
 	uv run --group changelog antsibull-changelog release
 {% endif %}{% if include_docker %}
 # The collection-level molecule scenario converges the example role by its short name
-# (molecule.yml sets ANSIBLE_ROLES_PATH to roles/). Scenarios live under extensions/molecule/.
+# (.config/molecule/config.yml sets ANSIBLE_ROLES_PATH to roles/). Scenarios live under extensions/molecule/.
 test:
 	uv run molecule test
 

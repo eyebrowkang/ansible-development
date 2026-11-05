@@ -61,6 +61,7 @@ make test        # molecule（example role）
 | `roles/example/` | 一个占位 role；按需复制成更多 role |
 | `extensions/molecule/default/` | docker molecule 场景（`include_docker` 时；collection 的场景放这里，不是顶层 `molecule/`） |
 | `extensions/molecule/vagrant/` | vagrant+libvirt 场景（`include_vagrant` 时；与 standalone role 的 vagrant 场景对齐，靠短名解析 example role） |
+| `.config/molecule/config.yml` | 所有场景共用的 molecule 配置：关掉 prerun，设置 `ANSIBLE_COLLECTIONS_PATH` 和 `ANSIBLE_ROLES_PATH`（见下文「两类测试」）。不进 Galaxy artifact（`build_ignore`） |
 | `CHANGELOG.md` | ansible-lint `galaxy[no-changelog]` 要求 |
 | `pyproject.toml` + `Makefile` | uv 工具链 + 本地 target |
 | `renovate.json` | Renovate 依赖更新（`dependency_updates` 时，默认开；uv + Actions，与 role 同一套配置、平台无关——见 [creating-a-role.md](creating-a-role.md) 的「依赖更新自动化（Renovate）」一节） |
@@ -70,7 +71,11 @@ make test        # molecule（example role）
 ## 两类测试
 
 - **`make sanity`** = `ansible-test sanity --venv`。用 `--venv`（不是 `--docker`）：sanity 各测试在独立 venv 里跑，**不需 docker**，因此在 Forgejo DooD runner 上也不会踩 "兄弟容器 bind-mount 挂到宿主路径" 的坑。慢但全面，是 Galaxy 的标准门禁。
-- **`make test`** = molecule 跑 `roles/example`（docker 场景，`include_docker` 时）。场景在 collection 根的 `extensions/molecule/`，`converge.yml` 用**短名** `roles: [example]`，靠 `molecule.yml` 里的 `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` 解析——这样 molecule 的 create/destroy playbook 不会被 ansible-lint 当成 role 内容（否则 `var-naming[no-role-prefix]` 误报）。
+- **`make test`** = molecule 跑 `roles/example`（docker 场景，`include_docker` 时）。场景在 collection 根的 `extensions/molecule/`，`converge.yml` 用**短名** `roles: [example]`，靠 `ANSIBLE_ROLES_PATH=${MOLECULE_PROJECT_DIRECTORY}/roles` 解析——这样 molecule 的 create/destroy playbook 不会被 ansible-lint 当成 role 内容（否则 `var-naming[no-role-prefix]` 误报）。
+  - 这个变量和下面两项都写在 collection 根的 `.config/molecule/config.yml` 里。molecule 会把每个场景的 `molecule.yml` 合并到它上面，所以对所有场景生效，包括以后新加的场景。
+  - **`prerun: false`**：molecule 的 prerun 会在每条命令（连 `molecule syntax` 也算）前把被测 collection 装进 `~/.ansible/collections`。工作区一改，这份副本就过时了；ansible-lint 会警告 "Another version ... was found"，并且按 FQCN 解析到的是这份旧副本。关掉 prerun 后，`galaxy.yml` 的 `dependencies` 不再被自动安装，所以要同时写进各场景的 `collections.yml`，由 `dependency: galaxy` 这一步安装（模板生成的已经这样写了）。
+  - **`ANSIBLE_COLLECTIONS_PATH`**：第一项是 `${MOLECULE_PROJECT_DIRECTORY}/../../..`，也就是 collection 所在的 `ansible_collections/<ns>/<name>` 的上一层（ansible-test 本来就要求这个布局），所以 FQCN（本 collection 的 role、模块、插件）直接解析到工作区；后面接 Ansible 默认的两个路径，`collections.yml` 装的依赖在那里。
+  - 从旧模板升级上来的 collection，`~/.ansible/collections/ansible_collections/<ns>/<name>` 里可能还留着旧副本，删掉一次即可。
 - **`make test-vm`** = molecule 跑 vagrant 场景（`include_vagrant` 时；需 `uv sync --group vagrant` + libvirt/KVM）。同 standalone role 走 molecule-plugins#301 的 `ANSIBLE_LIBRARY`/`ANSIBLE_FILTER_PLUGINS` 变通，见 [molecule-301-workaround.md](molecule-301-workaround.md)。
 - **`make units`** = `ansible-test units --venv`（`include_unit_tests` 时生成，`include_plugins` 隐含它）。跑 `tests/unit/` 下的单测，无需 docker。新加的测试文件要先 `git add`：`ansible-test` 经 git 收集目标，未跟踪的测试会被静默跳过。CI 里 forgejo `lint.yml` / github `ci.yml` 都有对应 `units` job，脚手架自测的 `smoke-collection-plugins` 还会连 sanity 一起跑。
 
